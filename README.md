@@ -1,6 +1,6 @@
 # template-tree-simplifier
 
-[![GoDoc](https://godoc.org/github.com/mh-cbon/template-tree-simplifier?status.svg)](https://godoc.org/github.com/mh-cbon/template-tree-simplifier)
+[![GoDoc](https://godoc.org/github.com/mh-cbon/template-tree-simplifier/simplifier?status.svg)](https://godoc.org/github.com/mh-cbon/template-tree-simplifier/simplifier)
 
 A package to simplify a template AST via a serie of transformations.
 
