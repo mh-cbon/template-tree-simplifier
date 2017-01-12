@@ -80,6 +80,9 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 		if t.simplifyActionNode(node) {
 			return true
 		}
+		if t.variablifyActionNode(node) {
+			return true
+		}
 		t.enter(node)
 		if t.browseNodes(node.Pipe) {
 			return true
@@ -205,6 +208,47 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 		}
 	}
 	// }
+	return false
+}
+
+// variablifyActionNode test action node which are complex
+// structure, split them into
+// a variable assignment,
+// a variable print
+func (t *treeSimplifier) variablifyActionNode(node *parse.ActionNode) bool {
+	/*
+	   look for
+	   {{ lower "rr" }}
+	   transform into
+	   {{ $some := lower "rr" }}
+	   {{ $some }}
+	*/
+	if len(node.Pipe.Decl) == 0 && len(node.Pipe.Cmds) > 0 {
+		if _, ok := node.Pipe.Cmds[0].Args[0].(*parse.IdentifierNode); ok {
+			varname := t.createVarName()
+			//transform the print into a variable assignment
+			node.Pipe.Decl = append(node.Pipe.Decl, &parse.VariableNode{
+				Ident: []string{varname},
+			})
+			// add a print of the variable
+			newAction := &parse.ActionNode{}
+			newAction.NodeType = parse.NodeAction
+			newAction.Pipe = &parse.PipeNode{}
+			newAction.Pipe.NodeType = parse.NodePipe
+			newAction.Pipe.Decl = make([]*parse.VariableNode, 0)
+			newAction.Pipe.Cmds = make([]*parse.CommandNode, 0)
+			cmd := &parse.CommandNode{}
+			cmd.NodeType = parse.NodeCommand
+			cmd.Args = append(cmd.Args, &parse.VariableNode{
+				NodeType: parse.NodeVariable,
+				Ident:    []string{varname},
+			})
+			newAction.Pipe.Cmds = append(newAction.Pipe.Cmds, cmd)
+			t.insertActionAfterRef(t.tree.Root, node, newAction)
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -341,6 +385,44 @@ func (t *treeSimplifier) insertActionBeforeRef(list *parse.ListNode, ref parse.N
 				return true
 			}
 			if node.ElseList != nil && t.insertActionBeforeRef(node.ElseList, ref, newAction) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// insertActionAfterRef browses given node list until it can find ref node,
+// it then insert newAction after the ref node.
+// It returns false if it failed to insert the new node.
+func (t *treeSimplifier) insertActionAfterRef(list *parse.ListNode, ref parse.Node, newAction *parse.ActionNode) bool {
+	for i := 0; i < len(list.Nodes); i++ {
+		if list.Nodes[i] == ref {
+			list.Nodes = append(list.Nodes, nil)
+			copy(list.Nodes[i+2:], list.Nodes[i+1:])
+			list.Nodes[i+1] = newAction
+			return true
+		}
+		switch node := list.Nodes[i].(type) {
+		case *parse.IfNode:
+			if node.List != nil && t.insertActionAfterRef(node.List, ref, newAction) {
+				return true
+			}
+			if node.ElseList != nil && t.insertActionAfterRef(node.ElseList, ref, newAction) {
+				return true
+			}
+		case *parse.RangeNode:
+			if node.List != nil && t.insertActionAfterRef(node.List, ref, newAction) {
+				return true
+			}
+			if node.ElseList != nil && t.insertActionAfterRef(node.ElseList, ref, newAction) {
+				return true
+			}
+		case *parse.WithNode:
+			if node.List != nil && t.insertActionAfterRef(node.List, ref, newAction) {
+				return true
+			}
+			if node.ElseList != nil && t.insertActionAfterRef(node.ElseList, ref, newAction) {
 				return true
 			}
 		}
