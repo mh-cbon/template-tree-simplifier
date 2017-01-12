@@ -46,6 +46,7 @@ func main() {
 
 	for _, t := range tpl.Templates() {
 		if t.Tree != nil {
+			simplifier.Unshadow(t.Tree)
 			simplifier.Simplify(t.Tree)
 		}
 	}
