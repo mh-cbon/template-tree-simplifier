@@ -3,10 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/mh-cbon/print-template-tree/printer"
-	"github.com/mh-cbon/template-tree-simplifier/simplifier"
 	"strings"
 	"text/template"
+
+	"github.com/mh-cbon/print-template-tree/printer"
+	"github.com/mh-cbon/template-tree-simplifier/simplifier"
 )
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 			fmt.Printf("Tree.Name=%v\n\n", t.Name())
 			fmt.Println("BEFORE TRANSFORM")
 			printTemplateInfo(t, data)
+			simplifier.Unshadow(t.Tree)
 			simplifier.Simplify(t.Tree)
 			fmt.Println("AFTER TRANSFORM")
 			printTemplateInfo(t, data)
