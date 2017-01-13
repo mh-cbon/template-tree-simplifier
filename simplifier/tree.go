@@ -118,6 +118,7 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.RangeNode:
 		t.enter(node)
+		t.simplifyRangeNode(node)
 		if t.browseNodes(node.Pipe) {
 			return true
 		}
@@ -131,6 +132,7 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.IfNode:
 		t.enter(node)
+		t.simplifyIfNode(node)
 		if t.browseNodes(node.Pipe) {
 			return true
 		}
@@ -144,6 +146,7 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.WithNode:
 		t.enter(node)
+		t.simplifyWithNode(node)
 		if t.browseNodes(node.Pipe) {
 			return true
 		}
@@ -184,7 +187,6 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 		}
 		return true
 	}
-	// if len(node.Pipe.Decl) == 0 {
 	/*
 	  look for
 	  {{ "some" | split ("what" | up) }}
@@ -207,7 +209,109 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 			return true
 		}
 	}
-	// }
+	/*
+	  look for
+	  {{ .Field.Node }}
+	  transform into
+	  {{ $some := .Field.Node}}
+	  {{ $some }}
+	*/
+	if len(node.Pipe.Decl) == 0 && len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) > 0 {
+		if _, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
+			// transform this node into an asignment
+			varName := t.createVarName()
+			varNode := createAVariableNode(varName)
+			node.Pipe.Decl = append(node.Pipe.Decl, varNode)
+			// add a new print action node
+			newAction := createActionNodeToPrintVar(varName)
+			t.insertActionAfterRef(t.tree.Root, node, newAction)
+			return true
+		}
+	}
+	/*
+	  look for
+	  {{ split "r" .Field.Node }}
+	  transform into
+	  {{ $some := .Field.Node}}
+	  {{ split "r" $some }}
+	*/
+	if len(node.Pipe.Decl) == 0 && len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) > 1 {
+		if _, ok := node.Pipe.Cmds[0].Args[0].(*parse.IdentifierNode); ok {
+			for i, arg := range node.Pipe.Cmds[0].Args {
+				if field, ok := arg.(*parse.FieldNode); ok {
+					// create a new assignment of the fieldNode
+					varName := t.createVarName()
+					newAction := createAVariableAssignmentOfFieldNode(varName, field)
+					// insert the new action before this node
+					t.insertActionBeforeRef(t.tree.Root, node, newAction)
+					// replace the fieldNode arg with a variable node
+					varNode := createAVariableNode(varName)
+					node.Pipe.Cmds[0].Args[i] = varNode
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// simplifyIfNode reduce complexity of IfNode.
+func (t *treeSimplifier) simplifyIfNode(node *parse.IfNode) bool {
+	/* look for
+	{{if .Field.Node}}
+	transform to
+	{{$some := .Field.Node}}{{if $some}}
+	*/
+	if len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) == 1 {
+		if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
+			varName := t.createVarName()
+			varNode := createAVariableNode(varName)
+			newAction := createAVariableAssignmentOfFieldNode(varName, field)
+			node.Pipe.Cmds[0].Args[0] = varNode
+			t.insertActionBeforeRef(t.tree.Root, node, newAction)
+			return true
+		}
+	}
+	return false
+}
+
+// simplifyWithNode reduce complexity of WithNode.
+func (t *treeSimplifier) simplifyWithNode(node *parse.WithNode) bool {
+	/* look for
+	{{with $y := .S.S}}
+	transform to
+	{{$some := .Field.Node}}{{with $y := $some}}
+	*/
+	if len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) == 1 {
+		if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
+			varName := t.createVarName()
+			varNode := createAVariableNode(varName)
+			newAction := createAVariableAssignmentOfFieldNode(varName, field)
+			node.Pipe.Cmds[0].Args[0] = varNode
+			t.insertActionBeforeRef(t.tree.Root, node, newAction)
+			return true
+		}
+	}
+	return false
+}
+
+// simplifyRangeNode reduce complexity of RangeNode.
+func (t *treeSimplifier) simplifyRangeNode(node *parse.RangeNode) bool {
+	/* look for
+	{{range .S.S}}
+	transform to
+	{{$some := .Field.Node}}{{range $some}}
+	*/
+	if len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) == 1 {
+		if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
+			varName := t.createVarName()
+			varNode := createAVariableNode(varName)
+			newAction := createAVariableAssignmentOfFieldNode(varName, field)
+			node.Pipe.Cmds[0].Args[0] = varNode
+			t.insertActionBeforeRef(t.tree.Root, node, newAction)
+			return true
+		}
+	}
 	return false
 }
 
@@ -231,19 +335,7 @@ func (t *treeSimplifier) variablifyActionNode(node *parse.ActionNode) bool {
 				Ident: []string{varname},
 			})
 			// add a print of the variable
-			newAction := &parse.ActionNode{}
-			newAction.NodeType = parse.NodeAction
-			newAction.Pipe = &parse.PipeNode{}
-			newAction.Pipe.NodeType = parse.NodePipe
-			newAction.Pipe.Decl = make([]*parse.VariableNode, 0)
-			newAction.Pipe.Cmds = make([]*parse.CommandNode, 0)
-			cmd := &parse.CommandNode{}
-			cmd.NodeType = parse.NodeCommand
-			cmd.Args = append(cmd.Args, &parse.VariableNode{
-				NodeType: parse.NodeVariable,
-				Ident:    []string{varname},
-			})
-			newAction.Pipe.Cmds = append(newAction.Pipe.Cmds, cmd)
+			newAction := createActionNodeToPrintVar(varname)
 			t.insertActionAfterRef(t.tree.Root, node, newAction)
 			return true
 		}
@@ -456,7 +548,7 @@ func createAVariablePipeAction(name string, pipe *parse.PipeNode) *parse.ActionN
 // example:
 // {{ up "what" | lower }}
 // the command to modify is: up "what"
-// this func will create: {{$name := up "what"}}
+// this func will create: {{$name := up "what" | lower}}
 func createAVariablePipeActionFromCmd(name string, cmd *parse.CommandNode) *parse.ActionNode {
 	varNode := &parse.VariableNode{
 		NodeType: parse.NodeVariable,
@@ -470,6 +562,48 @@ func createAVariablePipeActionFromCmd(name string, cmd *parse.CommandNode) *pars
 		Pipe:     actionPipe,
 	}
 	return node
+}
+
+// createAVariableAssignmentOfFieldNode creates a new ActionNode as an assignment
+// of a FieldNode.
+// example:
+// {{ .Field.Node }}
+// this func will create: {{$name := .Field.Node }}
+func createAVariableAssignmentOfFieldNode(name string, f *parse.FieldNode) *parse.ActionNode {
+	varNode := &parse.VariableNode{
+		NodeType: parse.NodeVariable,
+		Ident:    []string{name},
+	}
+	actionPipe := &parse.PipeNode{}
+	actionPipe.Decl = append(actionPipe.Decl, varNode)
+	cmdNode := &parse.CommandNode{}
+	cmdNode.NodeType = parse.NodeCommand
+	cmdNode.Args = []parse.Node{f}
+	actionPipe.Cmds = append(actionPipe.Cmds, cmdNode)
+	node := &parse.ActionNode{
+		NodeType: parse.NodeAction,
+		Pipe:     actionPipe,
+	}
+	return node
+}
+
+// createActionNodeToPrintVar creates a new ActionNode to print a var
+// {{$name}}
+func createActionNodeToPrintVar(varname string) *parse.ActionNode {
+	newAction := &parse.ActionNode{}
+	newAction.NodeType = parse.NodeAction
+	newAction.Pipe = &parse.PipeNode{}
+	newAction.Pipe.NodeType = parse.NodePipe
+	newAction.Pipe.Decl = make([]*parse.VariableNode, 0)
+	newAction.Pipe.Cmds = make([]*parse.CommandNode, 0)
+	cmd := &parse.CommandNode{}
+	cmd.NodeType = parse.NodeCommand
+	cmd.Args = append(cmd.Args, &parse.VariableNode{
+		NodeType: parse.NodeVariable,
+		Ident:    []string{varname},
+	})
+	newAction.Pipe.Cmds = append(newAction.Pipe.Cmds, cmd)
+	return newAction
 }
 
 // createAVariableNode creates a VariableNode with givne name.

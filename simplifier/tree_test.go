@@ -109,7 +109,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{up .S | lower}}`,
-			expectTplStr: `{{$var1 := up .S}}{{$var0 := lower $var1}}{{$var0}}`,
+			expectTplStr: `{{$var0 := .S}}{{$var2 := up $var0}}{{$var1 := lower $var2}}{{$var1}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -267,7 +267,7 @@ func TestAll(t *testing.T) {
 			tplstr: `{{range .List}}
 {{.}}
 {{end}}`,
-			expectTplStr: `{{range .List}}
+			expectTplStr: `{{$var0 := .List}}{{range $var0}}
 {{.}}
 {{end}}`,
 			funcs:    defFuncs,
@@ -355,12 +355,12 @@ func TestAll(t *testing.T) {
   This is the else branch
   {{"some" | split (("what" | lower) | up)}}
 {{end}}`,
-			expectTplStr: `{{range .List}}
+			expectTplStr: `{{$var0 := .List}}{{range $var0}}
   This is the range branch
-  {{$var1 := lower "what"}}{{$var0 := up $var1}}{{$var2 := split $var0 "some"}}{{$var2}}
+  {{$var2 := lower "what"}}{{$var1 := up $var2}}{{$var3 := split $var1 "some"}}{{$var3}}
 {{else}}
   This is the else branch
-  {{$var4 := lower "what"}}{{$var3 := up $var4}}{{$var5 := split $var3 "some"}}{{$var5}}
+  {{$var5 := lower "what"}}{{$var4 := up $var5}}{{$var6 := split $var4 "some"}}{{$var6}}
 {{end}}`,
 			funcs:    defFuncs,
 			data:     struct{ List []string }{List: []string{"what"}},
@@ -398,6 +398,48 @@ func TestAll(t *testing.T) {
 			expectTplStr: `{{$var0 := lower ""}}{{with $tpl_x := $var0}}{{else}}{{$var1 := up $}}{{$var1}}{{$var3 := up .}}{{$var2 := lower $var3}}{{$var2}}{{end}}`,
 			funcs:        defFuncs,
 			data:         "hello",
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{.S.S}}`,
+			expectTplStr: `{{$var0 := .S.S}}{{$var0}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S string } }{S: struct{ S string }{S: "hello"}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{split "" .S.S}}`,
+			expectTplStr: `{{$var0 := .S.S}}{{$var1 := split "" $var0}}{{$var1}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S string } }{S: struct{ S string }{S: "hello"}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{call .S}}`,
+			expectTplStr: `{{$var0 := .S}}{{$var1 := call $var0}}{{$var1}}`,
+			funcs:        defFuncs,
+			data:         struct{ S func() string }{S: func() string { return "hello" }},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{if .S.S}}this is true{{end}}`,
+			expectTplStr: `{{$var0 := .S.S}}{{if $var0}}this is true{{end}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S bool } }{S: struct{ S bool }{S: true}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{with $y := .S.S}}plop{{end}}`,
+			expectTplStr: `{{$var0 := .S.S}}{{with $tpl_y := $var0}}plop{{end}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S bool } }{S: struct{ S bool }{S: true}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{range .S.S}}{{.}}{{end}}`,
+			expectTplStr: `{{$var0 := .S.S}}{{range $var0}}{{.}}{{end}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
 			simplify:     true,
 		},
 	}
