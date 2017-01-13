@@ -1,6 +1,7 @@
 package simplifier
 
 import (
+	"fmt"
 	"text/template/parse"
 )
 
@@ -18,7 +19,9 @@ func renameVariables(l interface{}) {
 		}
 
 	case *parse.VariableNode:
-		node.Ident[0] = "$tpl_" + node.Ident[0][1:] // get ride of $ sign
+		if node.Ident[0] != "$" {
+			node.Ident[0] = "$tpl_" + node.Ident[0][1:] // get ride of $ sign
+		}
 
 	case *parse.ActionNode:
 		renameVariables(node.Pipe)
@@ -46,8 +49,29 @@ func renameVariables(l interface{}) {
 		renameVariables(node.List)
 		renameVariables(node.ElseList)
 
-		// default:
-		// 	fmt.Printf("%#v\n", node)
-		// 	fmt.Printf("!!! Unhandled %T\n", node)
+	case *parse.WithNode:
+		renameVariables(node.BranchNode.Pipe)
+		renameVariables(node.BranchNode.List)
+		renameVariables(node.BranchNode.ElseList)
+
+	case *parse.StringNode:
+		// pass
+	case *parse.NumberNode:
+		// pass
+	case *parse.BoolNode:
+		// pass
+	case *parse.IdentifierNode:
+		// pass
+	case *parse.DotNode:
+		// pass
+	case *parse.FieldNode:
+		// pass
+	case *parse.TextNode:
+		// pass
+
+	default:
+		fmt.Printf("%#v\n", node)
+		fmt.Printf("!!! Unhandled %T\n", node)
+		panic("unhandled")
 	}
 }
