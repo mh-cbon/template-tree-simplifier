@@ -118,7 +118,9 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.RangeNode:
 		t.enter(node)
-		t.simplifyRangeNode(node)
+		if t.simplifyRangeNode(node) {
+			return true
+		}
 		if t.browseNodes(node.Pipe) {
 			return true
 		}
@@ -132,7 +134,9 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.IfNode:
 		t.enter(node)
-		t.simplifyIfNode(node)
+		if t.simplifyIfNode(node) {
+			return true
+		}
 		if t.browseNodes(node.Pipe) {
 			return true
 		}
@@ -146,7 +150,9 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.WithNode:
 		t.enter(node)
-		t.simplifyWithNode(node)
+		if t.simplifyWithNode(node) {
+			return true
+		}
 		if t.browseNodes(node.Pipe) {
 			return true
 		}
@@ -157,10 +163,27 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 			return true
 		}
 		t.leave()
+	case *parse.VariableNode:
+		//pass
+	case *parse.IdentifierNode:
+		//pass
+	case *parse.StringNode:
+		//pass
+	case *parse.NumberNode:
+		//pass
+	case *parse.BoolNode:
+		//pass
+	case *parse.DotNode:
+		//pass
+	case *parse.FieldNode:
+		//pass
+	case *parse.TextNode:
+		//pass
 
-		// default:
-		// 	fmt.Printf("%#v\n", node)
-		// 	fmt.Printf("!!! Unhandled %T\n", node)
+	default:
+		fmt.Printf("%#v\n", node)
+		fmt.Printf("!!! Unhandled %T\n", node)
+		panic("unhandled")
 	}
 	return false
 }
