@@ -37,6 +37,7 @@ func main() {
 	file := "cli/tpl/test.tpl"
 	fmt.Println(file)
 
+  data := nil
 	funcs := template.FuncMap{}
 
 	tpl, err := template.New("").Funcs(funcs).ParseFiles(file)
@@ -44,14 +45,7 @@ func main() {
 		panic(err)
 	}
 
-	for _, t := range tpl.Templates() {
-		if t.Tree != nil {
-			simplifier.Unshadow(t.Tree)
-			simplifier.Simplify(t.Tree)
-			typeCheck = simplifier.TypeCheck(t.Tree, nil, funcs)
-			simplifier.Unhole(t.Tree, typeCheck, nil, funcs)
-		}
-	}
+  simplifier.Transform(t, data, funcs)
 }
 
 ```
