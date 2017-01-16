@@ -48,6 +48,8 @@ func main() {
 		if t.Tree != nil {
 			simplifier.Unshadow(t.Tree)
 			simplifier.Simplify(t.Tree)
+			typeCheck = simplifier.TypeCheck(t.Tree, nil, funcs)
+			simplifier.Unhole(t.Tree, typeCheck, nil, funcs)
 		}
 	}
 }
