@@ -30,9 +30,10 @@ func Transform(some interface{}, data interface{}, funcs map[string]interface{})
 }
 
 // TransformTree fully simplify a template Tree.
-func TransformTree(tree *parse.Tree, data interface{}, funcs map[string]interface{}) {
+func TransformTree(tree *parse.Tree, data interface{}, funcs map[string]interface{}) *State {
 	Unshadow(tree)
 	Simplify(tree)
 	typeCheck := TypeCheck(tree, data, funcs)
 	Unhole(tree, typeCheck, funcs)
+	return typeCheck
 }
