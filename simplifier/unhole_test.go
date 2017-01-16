@@ -157,7 +157,7 @@ func unholetemplate(t *template.Template, testData TestData) (*template.Template
 		if t.Tree != nil {
 			simplifier.Simplify(t.Tree)
 			typeCheck = simplifier.TypeCheck(t.Tree, testData.data, testData.funcs)
-			simplifier.Unhole(t.Tree, typeCheck, testData.data, testData.funcs)
+			simplifier.Unhole(t.Tree, typeCheck, testData.funcs)
 		}
 	}
 	return ret, typeCheck

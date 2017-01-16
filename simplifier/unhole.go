@@ -12,14 +12,17 @@ import (
 // Exemple:
 // there is a call such a.b.c.d
 // if b is an interface{} value,
-// there is no way to statically type check the subsequent c.d path, it can only be done at runtime via reflection.
-// This process will solve that by identifying such situation and isolate type checkable and type uncheckable parts.
+// there is no way to statically type check the subsequent c.d path,
+// it can only be done at runtime via reflection.
+// This process will solve that problem
+// by identifying such situation and isolate
+// type checkable and type uncheckable parts.
 // so such node {{a.b.c.d}} will become {{browsePropertyPath a.b "c.d"}}.
 // Where browsePropertyPath is a new identifier (func of funcmap).
 // Note1: the case may occur with variable/identifier nodes too,
 // lets imagine {{$z := a}}{{$z.b.c.d}}
 // Note2: this will work only after simplify occured
-func Unhole(tree *parse.Tree, state *State, data interface{}, funcs map[string]interface{}) {
+func Unhole(tree *parse.Tree, state *State, funcs map[string]interface{}) {
 	unhole := &treeUnhole{tree: tree, funcs: funcs}
 	unhole.process(state)
 }
