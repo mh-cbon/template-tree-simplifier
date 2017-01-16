@@ -25,6 +25,10 @@ type type4 struct {
 	Some interface{}
 }
 
+type type5 struct {
+	Some *type3
+}
+
 func (t type4) Method() interface{}        { return nil }
 func (t type4) MethodArgs(a string) string { return "" }
 
@@ -342,6 +346,32 @@ func TestTypeCheck(t *testing.T) {
 				map[string]reflect.Type{
 					".":      reflect.TypeOf(type4{}),
 					"$tpl_x": reflectInterface,
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{$x := .Some}}`,
+			expectTplStr: `{{$tpl_x := .Some}}`,
+			funcs:        defFuncs,
+			typecheck:    true,
+			data:         type5{Some: &type3{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(type5{}),
+					"$tpl_x": reflect.TypeOf(&type3{}),
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{$x := .Some.Some}}`,
+			expectTplStr: `{{$tpl_x := .Some.Some}}`,
+			funcs:        defFuncs,
+			typecheck:    true,
+			data:         type5{Some: &type3{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(type5{}),
+					"$tpl_x": reflect.TypeOf(type2{}),
 				},
 			},
 		},

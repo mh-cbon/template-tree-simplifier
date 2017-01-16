@@ -319,6 +319,9 @@ func (t *treeTypecheck) getPathType(path []string, val reflect.Type) reflect.Typ
 		if val.Kind() == reflect.Interface {
 			return val
 		}
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
 		field, found := val.FieldByName(p)
 		if !found {
 			meth, found := val.MethodByName(p)
