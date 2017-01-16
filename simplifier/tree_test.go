@@ -3,6 +3,7 @@ package simplifier_test
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"text/template"
@@ -17,6 +18,9 @@ type TestData struct {
 	funcs        template.FuncMap
 	simplify     bool
 	unshadow     bool
+	typecheck    bool
+	unhole       bool
+	checkedTypes []map[string]reflect.Type
 }
 
 func TestAll(t *testing.T) {
@@ -467,12 +471,20 @@ func execTestData(testData TestData, t *testing.T) bool {
 		return false
 	}
 	var modifiedTemplate *template.Template
+	var typeCheck *simplifier.State
 	if testData.simplify {
 		// do the simplification
 		modifiedTemplate = simplifytemplate(tpl)
 	} else if testData.unshadow {
 		// do the unshadowing
 		modifiedTemplate = unshadowtemplate(tpl)
+	} else if testData.typecheck {
+		// do the unholing
+		modifiedTemplate, typeCheck = typechecktemplate(tpl, testData)
+	} else if testData.unhole {
+		// do the unholing
+		modifiedTemplate, typeCheck = unholetemplate(tpl, testData)
+		// fmt.Printf("%#v\n", modifiedTemplate.Tree.Root.String())
 	}
 	// execute simplified template, check everything is still fine
 	simplifiedOut, err := exectemplate(modifiedTemplate, testData.data)
@@ -494,6 +506,37 @@ func execTestData(testData TestData, t *testing.T) bool {
 		t.Errorf("Simplified template is not as expected\nEXPECTED\n%v\nSIMPLIFIED\n%v\n",
 			testData.expectTplStr, s)
 		return false
+	}
+	if typeCheck != nil {
+		if len(testData.checkedTypes) != typeCheck.Len() {
+			t.Errorf("Expected scope length is incorrect, expected=%v, got=%v\nTEMPLATE:%v",
+				len(testData.checkedTypes), typeCheck.Len(), testData.tplstr)
+			fmt.Printf("%#v\n", typeCheck, testData.tplstr)
+			return false
+		}
+		for i, scope := range testData.checkedTypes {
+			typeCheck.Enter()
+			for vard, typed := range scope {
+				if typeCheck.HasVar(vard) == false {
+					t.Errorf("Expected scope(%v) to contain the variable=%v\nTEMPLATE:%v",
+						i, vard, testData.tplstr)
+					return false
+				} else {
+					if typed != typeCheck.GetVar(vard) {
+						t.Errorf("Expected scope(%v) to contain the variable=%v with the same reflect.Type, expected=%v, got=%v\nTEMPLATE:%v",
+							i, vard, typed, typeCheck.GetVar(vard), testData.tplstr)
+						return false
+					}
+				}
+			}
+			for vard, _ := range typeCheck.Current() {
+				if _, ok := scope[vard]; ok == false {
+					t.Errorf("Uexpected variable=%v in scope(%v)\nTEMPLATE:%v",
+						vard, i, testData.tplstr)
+					return false
+				}
+			}
+		}
 	}
 	return true
 }
