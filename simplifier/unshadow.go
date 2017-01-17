@@ -165,6 +165,8 @@ func (t *treeUnshadower) browseToUnshadow(l interface{}) bool {
 		// pass
 	case *parse.DotNode:
 		// pass
+	case *parse.FieldNode:
+		// pass
 	case *parse.VariableNode:
 		// do the rename
 		node.Ident[0] = t.getName(node.Ident[0])
@@ -172,6 +174,7 @@ func (t *treeUnshadower) browseToUnshadow(l interface{}) bool {
 	default:
 		fmt.Printf("%#v\n", node)
 		fmt.Printf("!!! Unhandled %T\n", node)
+		panic("nop")
 	}
 	return false
 }

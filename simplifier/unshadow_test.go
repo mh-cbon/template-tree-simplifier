@@ -39,6 +39,19 @@ func TestUnshadow(t *testing.T) {
 			funcs:        defFuncs,
 			unshadow:     true,
 		},
+		TestData{
+			tplstr:       `{{.X}}`,
+			expectTplStr: `{{.X}}`,
+			funcs:        defFuncs,
+			data:         struct{ X string }{X: ""},
+			unshadow:     true,
+		},
+		TestData{
+			tplstr:       `{{$y := true}}{{$z := 1}}{{$w := "word"}} `,
+			expectTplStr: `{{$y := true}}{{$z := 1}}{{$w := "word"}} `,
+			funcs:        defFuncs,
+			unshadow:     true,
+		},
 	}
 
 	for _, testData := range testTable {
