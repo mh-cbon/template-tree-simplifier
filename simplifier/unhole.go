@@ -201,7 +201,8 @@ func (t *treeUnhole) unholeActionNode(node *parse.ActionNode, state *State) {
 				}
 			}
 		}
-	} else {
+	} else if len(node.Pipe.Decl) == 1 && len(node.Pipe.Cmds) > 1 {
+		fmt.Println(node)
 		panic("unhandled")
 	}
 }
