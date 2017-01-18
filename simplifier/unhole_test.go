@@ -138,6 +138,50 @@ func TestUnhole(t *testing.T) {
 				},
 			},
 		},
+		TestData{
+			tplstr:       `{{with .}}{{.Some}}{{end}}`,
+			expectTplStr: `{{$var0 := .}}{{with $var0}}{{$var1 := .Some}}{{$var1}}{{end}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			data:         type4{Some: type4{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type4{}),
+					"$var0": reflect.TypeOf(type4{}),
+				},
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type4{}),
+					"$var1": reflectInterface,
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{if .Some}}{{.}}{{end}}`,
+			expectTplStr: `{{$var0 := .Some}}{{if $var0}}{{.}}{{end}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			data:         type4{Some: type4{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type4{}),
+					"$var0": reflectInterface,
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{$y := true}}{{$z := "rr"}}{{$t := 1}}`,
+			expectTplStr: `{{$tpl_y := true}}{{$tpl_z := "rr"}}{{$tpl_t := 1}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(nil),
+					"$tpl_y": reflect.TypeOf(true),
+					"$tpl_z": reflect.TypeOf(""),
+					"$tpl_t": reflect.TypeOf(1),
+				},
+			},
+		},
 	}
 
 	for _, testData := range testTable {
