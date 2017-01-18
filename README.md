@@ -37,7 +37,7 @@ func main() {
 	file := "cli/tpl/test.tpl"
 	fmt.Println(file)
 
-  data := nil
+	data := nil
 	funcs := template.FuncMap{}
 
 	tpl, err := template.New("").Funcs(funcs).ParseFiles(file)
@@ -45,7 +45,7 @@ func main() {
 		panic(err)
 	}
 
-  simplifier.Transform(t, data, funcs)
+	simplifier.Transform(t, data, funcs)
 }
 
 ```
