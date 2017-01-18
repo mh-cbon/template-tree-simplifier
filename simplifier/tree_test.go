@@ -509,9 +509,8 @@ func execTestData(testData TestData, t *testing.T) bool {
 	}
 	if typeCheck != nil {
 		if len(testData.checkedTypes) != typeCheck.Len() {
-			t.Errorf("Expected scope length is incorrect, expected=%v, got=%v\nTEMPLATE:%v",
+			t.Errorf("Expected scope length is incorrect, expected=%v, got=%v\nTEMPLATE: %v",
 				len(testData.checkedTypes), typeCheck.Len(), testData.tplstr)
-			fmt.Printf("%#v\n", typeCheck, testData.tplstr)
 			return false
 		}
 		for i, scope := range testData.checkedTypes {
