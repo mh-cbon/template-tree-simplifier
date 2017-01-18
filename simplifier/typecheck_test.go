@@ -29,6 +29,15 @@ type type5 struct {
 	Some *type3
 }
 
+type type6 struct {
+	Some         []type1
+	SomeSlicePtr []*type1
+}
+
+type type7 struct {
+	Some []*type7
+}
+
 func (t type4) Method() interface{}        { return nil }
 func (t type4) MethodArgs(a string) string { return "" }
 
@@ -384,6 +393,78 @@ func TestTypeCheck(t *testing.T) {
 				map[string]reflect.Type{
 					".":      reflect.TypeOf(nil),
 					"$tpl_x": reflectInterface,
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{range $i,$v := .Some}}{{range $i, $v := $v.Some}}{{end}}{{end}}`,
+			expectTplStr: `{{$var0 := .Some}}{{range $tpl_i, $tpl_v := $var0}}{{$var1 := $tpl_v.Some}}{{range $tpl_i, $tpl_v := $var1}}{{end}}{{end}}`,
+			funcs:        defFuncs,
+			typecheck:    true,
+			data:         type6{},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type6{}),
+					"$var0": reflect.TypeOf([]type1{}),
+				},
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(type1{}),
+					"$tpl_i": reflect.TypeOf(1),
+					"$tpl_v": reflect.TypeOf(type1{}),
+					"$var1":  reflect.TypeOf([]string{}),
+				},
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(""),
+					"$tpl_i": reflect.TypeOf(1),
+					"$tpl_v": reflect.TypeOf(""),
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{range $i,$v := .SomeSlicePtr}}{{range $i, $v := $v.Some}}{{end}}{{end}}`,
+			expectTplStr: `{{$var0 := .SomeSlicePtr}}{{range $tpl_i, $tpl_v := $var0}}{{$var1 := $tpl_v.Some}}{{range $tpl_i, $tpl_v := $var1}}{{end}}{{end}}`,
+			funcs:        defFuncs,
+			typecheck:    true,
+			data:         type6{},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type6{}),
+					"$var0": reflect.TypeOf([]*type1{}),
+				},
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(&type1{}),
+					"$tpl_i": reflect.TypeOf(1),
+					"$tpl_v": reflect.TypeOf(&type1{}),
+					"$var1":  reflect.TypeOf([]string{}),
+				},
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(""),
+					"$tpl_i": reflect.TypeOf(1),
+					"$tpl_v": reflect.TypeOf(""),
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{range $i,$v := .Some}}{{range $i, $v := $v.Some}}{{end}}{{end}}`,
+			expectTplStr: `{{$var0 := .Some}}{{range $tpl_i, $tpl_v := $var0}}{{$var1 := $tpl_v.Some}}{{range $tpl_i, $tpl_v := $var1}}{{end}}{{end}}`,
+			funcs:        defFuncs,
+			typecheck:    true,
+			data:         type7{},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type7{}),
+					"$var0": reflect.TypeOf([]*type7{}),
+				},
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(&type7{}),
+					"$tpl_i": reflect.TypeOf(1),
+					"$tpl_v": reflect.TypeOf(&type7{}),
+					"$var1":  reflect.TypeOf([]*type7{}),
+				},
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(&type7{}),
+					"$tpl_i": reflect.TypeOf(1),
+					"$tpl_v": reflect.TypeOf(&type7{}),
 				},
 			},
 		},

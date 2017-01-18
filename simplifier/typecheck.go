@@ -208,6 +208,9 @@ func (t *treeTypecheck) typeCheckActionNode(node *parse.ActionNode, state *State
 
 			} else if variable, ok := node.Pipe.Cmds[0].Args[0].(*parse.VariableNode); ok {
 				rightVarType := state.FindVar(variable.Ident[0])
+				if rightVarType == nil {
+					panic(fmt.Errorf("%v\nVariable not found %v in %v", t.tree.Root.String(), variable.Ident[0], node))
+				}
 				if len(variable.Ident) > 1 {
 					rightVarType = t.getPathType(variable.Ident[1:], rightVarType)
 				}
