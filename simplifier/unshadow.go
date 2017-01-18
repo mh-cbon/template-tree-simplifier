@@ -73,86 +73,51 @@ func (t *treeUnshadower) getName(n string) string {
 // process the tree until no more unshadowing can be done.
 func (t *treeUnshadower) process(tree *parse.Tree) {
 	t.tree = tree
-	for t.browseToUnshadow(tree.Root) {
-	}
+	t.browseToUnshadow(tree.Root)
 }
 
-func (t *treeUnshadower) browseToUnshadow(l interface{}) bool {
+func (t *treeUnshadower) browseToUnshadow(l interface{}) {
 	switch node := l.(type) {
 
 	case *parse.ListNode:
 		if node != nil {
 			for _, child := range node.Nodes {
-				if t.browseToUnshadow(child) {
-					return true
-				}
+				t.browseToUnshadow(child)
 			}
 		}
 
 	case *parse.ActionNode:
-		if t.browseToUnshadow(node.Pipe) {
-			return true
-		}
+		t.browseToUnshadow(node.Pipe)
 
 	case *parse.PipeNode:
-		for _, child := range node.Decl {
-			if len(child.Ident) == 1 {
-				if t.hasVar(child.Ident[0]) == false {
-					t.registerVar(child.Ident[0])
-				} else {
-					child.Ident[0] = t.rename(child.Ident[0])
-				}
-			} else {
-				if t.browseToUnshadow(child) {
-					return true
-				}
-			}
-		}
+		// note that it matters to handle cmds before declarations
 		for _, child := range node.Cmds {
-			if t.browseToUnshadow(child) {
-				return true
-			}
+			t.browseToUnshadow(child)
+		}
+		for _, child := range node.Decl {
+			t.handleDecl(child)
 		}
 
 	case *parse.CommandNode:
 		for _, child := range node.Args {
-			if t.browseToUnshadow(child) {
-				return true
-			}
+			t.browseToUnshadow(child)
 		}
 
 	case *parse.RangeNode:
-		if t.browseToUnshadow(node.Pipe) {
-			return true
-		}
-		if t.browseToUnshadow(node.List) {
-			return true
-		}
-		if t.browseToUnshadow(node.ElseList) {
-			return true
-		}
+		t.browseToUnshadow(node.Pipe)
+		t.browseToUnshadow(node.List)
+		t.browseToUnshadow(node.ElseList)
 
 	case *parse.IfNode:
-		if t.browseToUnshadow(node.Pipe) {
-			return true
-		}
-		if t.browseToUnshadow(node.List) {
-			return true
-		}
-		if t.browseToUnshadow(node.ElseList) {
-			return true
-		}
+		t.browseToUnshadow(node.Pipe)
+		t.browseToUnshadow(node.List)
+		t.browseToUnshadow(node.ElseList)
 
 	case *parse.WithNode:
-		if t.browseToUnshadow(node.Pipe) {
-			return true
-		}
-		if t.browseToUnshadow(node.List) {
-			return true
-		}
-		if t.browseToUnshadow(node.ElseList) {
-			return true
-		}
+		t.browseToUnshadow(node.Pipe)
+		t.browseToUnshadow(node.List)
+		t.browseToUnshadow(node.ElseList)
+
 	case *parse.StringNode:
 		// pass
 	case *parse.IdentifierNode:
@@ -176,5 +141,16 @@ func (t *treeUnshadower) browseToUnshadow(l interface{}) bool {
 		fmt.Printf("!!! Unhandled %T\n", node)
 		panic("nop")
 	}
-	return false
+}
+
+func (t *treeUnshadower) handleDecl(node *parse.VariableNode) {
+	if len(node.Ident) == 1 {
+		if t.hasVar(node.Ident[0]) == false {
+			t.registerVar(node.Ident[0])
+		} else {
+			node.Ident[0] = t.rename(node.Ident[0])
+		}
+	} else {
+		t.browseToUnshadow(node)
+	}
 }

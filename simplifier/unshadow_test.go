@@ -52,6 +52,18 @@ func TestUnshadow(t *testing.T) {
 			funcs:        defFuncs,
 			unshadow:     true,
 		},
+		TestData{
+			tplstr: `{{range $i, $v := .SomeTemplateDataSlice}}
+{{range $i, $v := $v.SomeTemplateDataSlice}}
+{{end}}
+{{end}}`,
+			expectTplStr: `{{range $i, $v := .SomeTemplateDataSlice}}
+{{range $i_shadow, $v_shadow := $v.SomeTemplateDataSlice}}
+{{end}}
+{{end}}`,
+			funcs:    defFuncs,
+			unshadow: true,
+		},
 	}
 
 	for _, testData := range testTable {
