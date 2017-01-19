@@ -144,14 +144,38 @@ func (s *State) IsMethodPath(path []string, val reflect.Type) bool {
 		if val.Kind() == reflect.Ptr {
 			val = val.Elem()
 		}
+		if val.Kind() == reflect.Struct {
+			field, found := val.FieldByName(p)
+			if !found {
+				_, found := val.MethodByName(p)
+				return found
+			}
+			val = field.Type
+		}
+	}
+	return false
+}
+
+// ReflectPath ...
+func (s *State) ReflectPath(path []string, val reflect.Type) reflect.Type {
+	for _, p := range path {
+		if val.Kind() == reflect.Interface {
+			return val
+		}
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
 		field, found := val.FieldByName(p)
 		if !found {
-			_, found := val.MethodByName(p)
-			return found
+			meth, found := val.MethodByName(p)
+			if found {
+				return meth.Type
+			}
+			return nil
 		}
 		val = field.Type
 	}
-	return false
+	return val
 }
 
 // process the tree until no more simplification can be done.
