@@ -111,6 +111,48 @@ func (s *State) FindVar(name string) reflect.Type {
 	return nil
 }
 
+// BrowsePathType ...
+func (s *State) BrowsePathType(path []string, val reflect.Type) reflect.Type {
+	for _, p := range path {
+		if val.Kind() == reflect.Interface {
+			return val
+		}
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
+		field, found := val.FieldByName(p)
+		if !found {
+			meth, found := val.MethodByName(p)
+			if !found {
+				panic("field/method not found")
+			}
+			val = meth.Type.Out(0)
+		} else {
+			val = field.Type
+		}
+	}
+	return val
+}
+
+// IsMethodPath ...
+func (s *State) IsMethodPath(path []string, val reflect.Type) bool {
+	for _, p := range path {
+		if val.Kind() == reflect.Interface {
+			return false
+		}
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
+		field, found := val.FieldByName(p)
+		if !found {
+			_, found := val.MethodByName(p)
+			return found
+		}
+		val = field.Type
+	}
+	return false
+}
+
 // process the tree until no more simplification can be done.
 func (t *treeTypecheck) process(tree *parse.Tree, state *State) {
 	t.browseNodes(tree.Root, state)
@@ -203,7 +245,7 @@ func (t *treeTypecheck) typeCheckActionNode(node *parse.ActionNode, state *State
 		varName := node.Pipe.Decl[0].Ident[0]
 		if len(node.Pipe.Cmds) == 1 && len(node.Pipe.Cmds[0].Args) > 0 {
 			if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
-				r := t.getPathType(field.Ident, state.Dot())
+				r := state.BrowsePathType(field.Ident, state.Dot())
 				state.AddVar(varName, r)
 
 			} else if variable, ok := node.Pipe.Cmds[0].Args[0].(*parse.VariableNode); ok {
@@ -212,7 +254,7 @@ func (t *treeTypecheck) typeCheckActionNode(node *parse.ActionNode, state *State
 					panic(fmt.Errorf("%v\nVariable not found %v in %v", t.tree.Root.String(), variable.Ident[0], node))
 				}
 				if len(variable.Ident) > 1 {
-					rightVarType = t.getPathType(variable.Ident[1:], rightVarType)
+					rightVarType = state.BrowsePathType(variable.Ident[1:], rightVarType)
 				}
 				state.AddVar(varName, rightVarType)
 
@@ -248,7 +290,7 @@ func (t *treeTypecheck) enterRangeNode(node *parse.RangeNode, state *State) bool
 			//-
 			rightVarType := state.FindVar(variable.Ident[0])
 			if len(variable.Ident) > 1 {
-				rightVarType = t.getPathType(variable.Ident[1:], rightVarType)
+				rightVarType = state.BrowsePathType(variable.Ident[1:], rightVarType)
 			}
 			newDotType = rightVarType
 
@@ -287,7 +329,7 @@ func (t *treeTypecheck) enterWithNode(node *parse.WithNode, state *State) bool {
 			//-
 			rightVarType := state.FindVar(variable.Ident[0])
 			if len(variable.Ident) > 1 {
-				rightVarType = t.getPathType(variable.Ident[1:], rightVarType)
+				rightVarType = state.BrowsePathType(variable.Ident[1:], rightVarType)
 			}
 			newDotType = rightVarType
 
@@ -315,28 +357,6 @@ func (t *treeTypecheck) enterWithNode(node *parse.WithNode, state *State) bool {
 		}
 	}
 	return false
-}
-
-func (t *treeTypecheck) getPathType(path []string, val reflect.Type) reflect.Type {
-	for _, p := range path {
-		if val.Kind() == reflect.Interface {
-			return val
-		}
-		if val.Kind() == reflect.Ptr {
-			val = val.Elem()
-		}
-		field, found := val.FieldByName(p)
-		if !found {
-			meth, found := val.MethodByName(p)
-			if !found {
-				panic("field/method not found")
-			}
-			val = meth.Type.Out(0)
-		} else {
-			val = field.Type
-		}
-	}
-	return val
 }
 
 func (t *treeTypecheck) getFuncValueType(name string) reflect.Type {
