@@ -64,6 +64,12 @@ func TestUnshadow(t *testing.T) {
 			funcs:    defFuncs,
 			unshadow: true,
 		},
+		TestData{
+			tplstr:       `{{$x := "e"}}{{define "rr"}}{{$x := "x"}}{{end}}{{template "rr" $x}}`,
+			expectTplStr: `{{$x := "e"}}{{template "rr" $x}}`,
+			funcs:        defFuncs,
+			unshadow:     true,
+		},
 	}
 
 	for _, testData := range testTable {

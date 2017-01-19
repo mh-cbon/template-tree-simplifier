@@ -54,6 +54,11 @@ func renameVariables(l interface{}) {
 		renameVariables(node.BranchNode.List)
 		renameVariables(node.BranchNode.ElseList)
 
+	case *parse.TemplateNode:
+		if node.Pipe != nil {
+			renameVariables(node.Pipe)
+		}
+
 	case *parse.StringNode:
 		// pass
 	case *parse.NumberNode:

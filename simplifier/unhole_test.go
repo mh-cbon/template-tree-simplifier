@@ -169,6 +169,19 @@ func TestUnhole(t *testing.T) {
 			},
 		},
 		TestData{
+			tplstr:       `{{template "rr" .Some}}{{define "rr"}}{{end}}`,
+			expectTplStr: `{{$var0 := .Some}}{{template "rr" $var0}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			data:         type4{Some: type4{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type4{}),
+					"$var0": reflectInterface,
+				},
+			},
+		},
+		TestData{
 			tplstr:       `{{$y := true}}{{$z := "rr"}}{{$t := 1}}`,
 			expectTplStr: `{{$tpl_y := true}}{{$tpl_z := "rr"}}{{$tpl_t := 1}}`,
 			funcs:        defFuncs,

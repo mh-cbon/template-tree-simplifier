@@ -468,6 +468,19 @@ func TestTypeCheck(t *testing.T) {
 				},
 			},
 		},
+		TestData{
+			tplstr:       `{{$x := "e"}}{{define "rr"}}{{$x := "x"}}{{end}}{{template "rr" $x}}`,
+			expectTplStr: `{{$tpl_x := "e"}}{{template "rr" $tpl_x}}`,
+			funcs:        defFuncs,
+			typecheck:    true,
+			data:         type7{},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(type7{}),
+					"$tpl_x": reflect.TypeOf(""),
+				},
+			},
+		},
 	}
 
 	for _, testData := range testTable {

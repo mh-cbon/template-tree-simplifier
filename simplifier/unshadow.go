@@ -114,6 +114,11 @@ func (t *treeUnshadower) browseToUnshadow(l interface{}) {
 		t.browseToUnshadow(node.List)
 		t.browseToUnshadow(node.ElseList)
 
+	case *parse.TemplateNode:
+		if node.Pipe != nil {
+			t.browseToUnshadow(node.Pipe)
+		}
+
 	case *parse.StringNode:
 		// pass
 	case *parse.IdentifierNode:

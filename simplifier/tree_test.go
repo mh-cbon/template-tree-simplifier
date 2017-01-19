@@ -119,14 +119,20 @@ func TestAll(t *testing.T) {
 			simplify:     true,
 		},
 		TestData{
+			tplstr:       `{{$t := "what" | up}}`,
+			expectTplStr: `{{$tpl_t := up "what"}}`,
+			funcs:        defFuncs,
+			simplify:     true,
+		},
+		TestData{
 			tplstr:       `{{$t := ("what" | up)}}`,
-			expectTplStr: `{{$tpl_t := (up "what")}}`,
+			expectTplStr: `{{$tpl_t := up "what"}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{$t := (.S | up)}}`,
-			expectTplStr: `{{$tpl_t := (up .S)}}`,
+			expectTplStr: `{{$tpl_t := up .S}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -134,7 +140,7 @@ func TestAll(t *testing.T) {
 		TestData{
 			tplstr: `{{$t := ("what" | up)}}
 {{$k := up $t}}`,
-			expectTplStr: `{{$tpl_t := (up "what")}}
+			expectTplStr: `{{$tpl_t := up "what"}}
 {{$tpl_k := up $tpl_t}}`,
 			funcs:    defFuncs,
 			simplify: true,
@@ -142,7 +148,7 @@ func TestAll(t *testing.T) {
 		TestData{
 			tplstr: `{{$t := (.S | up)}}
 {{$k := up $t}}`,
-			expectTplStr: `{{$tpl_t := (up .S)}}
+			expectTplStr: `{{$tpl_t := up .S}}
 {{$tpl_k := up $tpl_t}}`,
 			funcs:    defFuncs,
 			data:     struct{ S string }{S: "hello"},
@@ -451,6 +457,32 @@ func TestAll(t *testing.T) {
 			expectTplStr: `{{$tpl_x := .}}{{$var0 := $tpl_x.S.S}}{{$var0}}`,
 			funcs:        defFuncs,
 			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `some{{define "rr"}}what{{end}}ww{{template "rr"}}`,
+			expectTplStr: `someww{{template "rr"}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{define "rr"}}what{{end}}ww{{template "rr" .S.S}}`,
+			expectTplStr: `ww{{$var0 := .S.S}}{{template "rr" $var0}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{define "rr"}}what{{end}}ww{{template "rr" (up "rr")}}`,
+			expectTplStr: `ww{{$var0 := up "rr"}}{{template "rr" $var0}}`,
+			funcs:        defFuncs,
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{$x := "r"}}{{(((($x))))}}`,
+			expectTplStr: `{{$tpl_x := "r"}}{{$tpl_x}}`,
+			funcs:        defFuncs,
 			simplify:     true,
 		},
 	}

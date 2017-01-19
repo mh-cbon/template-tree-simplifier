@@ -69,6 +69,11 @@ func (t *treeUnhole) browseNodes(l interface{}, state *State) {
 		t.browseNodes(node.ElseList, state)
 		state.Leave()
 
+	case *parse.TemplateNode:
+		if node.Pipe != nil {
+			t.browseNodes(node.Pipe, state)
+		}
+
 	case *parse.PipeNode:
 		for _, c := range node.Decl {
 			t.browseNodes(c, state)

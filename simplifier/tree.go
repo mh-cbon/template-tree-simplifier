@@ -94,7 +94,6 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 		if t.simplifyPipeNode(node, ref) {
 			return true
 		}
-		// t.enter(node)
 		for _, child := range node.Decl {
 			if t.browseNodes(child) {
 				return true
@@ -105,7 +104,6 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 				return true
 			}
 		}
-		// t.leave()
 
 	case *parse.CommandNode:
 		// t.enter(node)
@@ -163,6 +161,19 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 			return true
 		}
 		t.leave()
+
+	case *parse.TemplateNode:
+		t.enter(node)
+		if node.Pipe != nil {
+			if t.simplifyTemplateNode(node) {
+				return true
+			}
+			if t.browseNodes(node.Pipe) {
+				return true
+			}
+		}
+		t.leave()
+
 	case *parse.VariableNode:
 		//pass
 	case *parse.IdentifierNode:
@@ -311,6 +322,32 @@ func (t *treeSimplifier) simplifyIfNode(node *parse.IfNode) bool {
 	{{if .Field.Node}}
 	transform to
 	{{$some := .Field.Node}}{{if $some}}
+	*/
+	if len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) == 1 {
+		if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
+			varName := t.createVarName()
+			varNode := createAVariableNode(varName)
+			newAction := createAVariableAssignmentOfFieldNode(varName, field)
+			node.Pipe.Cmds[0].Args[0] = varNode
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyIfNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
+			return true
+		}
+	}
+	return false
+}
+
+// simplifyTemplateNode reduce complexity of TemplateNode.
+func (t *treeSimplifier) simplifyTemplateNode(node *parse.TemplateNode) bool {
+	/* look for
+	{{template "rr" .Field.Node}}
+	transform to
+	{{$some := .Field.Node}}{{template "rr" $some}}
 	*/
 	if len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) == 1 {
 		if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
@@ -545,6 +582,8 @@ func (t *treeSimplifier) simplifyPipeNode(node *parse.PipeNode, ref parse.Node) 
 		isValidRef = true
 	case *parse.WithNode:
 		isValidRef = true
+	case *parse.TemplateNode:
+		isValidRef = true
 	}
 	if isValidRef {
 		/*
@@ -604,6 +643,20 @@ func (t *treeSimplifier) simplifyPipeNode(node *parse.PipeNode, ref parse.Node) 
 				}
 				return true
 			}
+		}
+	}
+
+	/*
+			  look for
+			  {{(up "what")}}
+			  transform into
+			  {{up "what"}}
+		    (ie: removes parenthesis)
+	*/
+	if len(node.Cmds) == 1 && len(node.Cmds[0].Args) == 1 {
+		if p, ok := node.Cmds[0].Args[0].(*parse.PipeNode); ok {
+			node.Cmds = p.Cmds
+			return true
 		}
 	}
 
