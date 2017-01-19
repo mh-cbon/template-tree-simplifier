@@ -446,6 +446,13 @@ func TestAll(t *testing.T) {
 			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
 			simplify:     true,
 		},
+		TestData{
+			tplstr:       `{{$x := .}}{{$x.S.S}}`,
+			expectTplStr: `{{$tpl_x := .}}{{$var0 := $tpl_x.S.S}}{{$var0}}`,
+			funcs:        defFuncs,
+			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
+			simplify:     true,
+		},
 	}
 
 	for _, testData := range testTable {

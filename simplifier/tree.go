@@ -249,7 +249,13 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 	  {{ $some }}
 	*/
 	if len(node.Pipe.Decl) == 0 && len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) > 0 {
+		validNode := false
 		if _, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok {
+			validNode = ok
+		} else if v, ok := node.Pipe.Cmds[0].Args[0].(*parse.VariableNode); ok {
+			validNode = ok && len(v.Ident) > 1
+		}
+		if validNode {
 			// transform this node into an asignment
 			varName := t.createVarName()
 			varNode := createAVariableNode(varName)
