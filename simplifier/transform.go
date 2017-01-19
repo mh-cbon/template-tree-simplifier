@@ -25,7 +25,8 @@ func Transform(some interface{}, data interface{}, funcs map[string]interface{})
 			}
 		}
 	} else {
-		panic(fmt.Errorf("Wrong type %T", some))
+		err := fmt.Errorf("Transform: unhandled template type %T", some)
+		panic(err)
 	}
 }
 

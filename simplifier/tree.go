@@ -181,9 +181,8 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 		//pass
 
 	default:
-		fmt.Printf("%#v\n", node)
-		fmt.Printf("!!! Unhandled %T\n", node)
-		panic("unhandled")
+		err := fmt.Errorf("treeSimplifier.browseNodes: unhandled node type\n%v\n%#v", node, node)
+		panic(err)
 	}
 	return false
 }
@@ -202,11 +201,16 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 		varName := t.createVarName()
 		varNode := createAVariableNode(varName)
 		if replacePipeWithVar(cmd, pipeToMove, varNode) == false {
-			panic("pipe not found in cmd")
+			err := fmt.Errorf("treeSimplifier.simplifyActionNode: failed to replace Pipe with Var in Cmd\n%v\n%#v", cmd, cmd)
+			panic(err)
 		}
 		newAction := createAVariablePipeAction(varName, pipeToMove)
 		if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
-			panic("reference node not found")
+			err := fmt.Errorf(
+				"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+				newAction, newAction,
+				node, node)
+			panic(err)
 		}
 		return true
 	}
@@ -223,11 +227,16 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 			varName := t.createVarName()
 			varNode := createAVariableNode(varName)
 			if replacePipeWithVar(cmd, pipeToMove, varNode) == false {
-				panic("pipe not found in cmd")
+				err := fmt.Errorf("treeSimplifier.simplifyActionNode: failed to replace Pipe with Var in Cmd\n%v\n%#v", cmd, cmd)
+				panic(err)
 			}
 			newAction := createAVariablePipeAction(varName, pipeToMove)
 			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
-				panic("reference node not found")
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
 			}
 			return true
 		}
@@ -247,7 +256,13 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 			node.Pipe.Decl = append(node.Pipe.Decl, varNode)
 			// add a new print action node
 			newAction := createActionNodeToPrintVar(varName)
-			insertActionAfterRef(t.tree.Root, node, newAction)
+			if insertActionAfterRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 		}
 	}
@@ -266,7 +281,13 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 					varName := t.createVarName()
 					newAction := createAVariableAssignmentOfFieldNode(varName, field)
 					// insert the new action before this node
-					insertActionBeforeRef(t.tree.Root, node, newAction)
+					if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+						err := fmt.Errorf(
+							"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+							newAction, newAction,
+							node, node)
+						panic(err)
+					}
 					// replace the fieldNode arg with a variable node
 					varNode := createAVariableNode(varName)
 					node.Pipe.Cmds[0].Args[i] = varNode
@@ -291,7 +312,13 @@ func (t *treeSimplifier) simplifyIfNode(node *parse.IfNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfFieldNode(varName, field)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyIfNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 		}
 	}
@@ -311,7 +338,13 @@ func (t *treeSimplifier) simplifyWithNode(node *parse.WithNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfFieldNode(varName, field)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyWithNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 
 			/* look for
@@ -324,7 +357,13 @@ func (t *treeSimplifier) simplifyWithNode(node *parse.WithNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfDotNode(varName, dot)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyWithNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 
 			/* look for
@@ -337,7 +376,13 @@ func (t *treeSimplifier) simplifyWithNode(node *parse.WithNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfVariableNode(varName, variable)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyWithNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 		}
 	}
@@ -357,7 +402,13 @@ func (t *treeSimplifier) simplifyRangeNode(node *parse.RangeNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfFieldNode(varName, field)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyRangeNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 
 			/* look for
@@ -370,7 +421,13 @@ func (t *treeSimplifier) simplifyRangeNode(node *parse.RangeNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfDotNode(varName, dot)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyRangeNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 
 			/* look for
@@ -383,7 +440,13 @@ func (t *treeSimplifier) simplifyRangeNode(node *parse.RangeNode) bool {
 			varNode := createAVariableNode(varName)
 			newAction := createAVariableAssignmentOfVariableNode(varName, variable)
 			node.Pipe.Cmds[0].Args[0] = varNode
-			insertActionBeforeRef(t.tree.Root, node, newAction)
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyRangeNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 		}
 	}
@@ -411,7 +474,13 @@ func (t *treeSimplifier) variablifyActionNode(node *parse.ActionNode) bool {
 			})
 			// add a print of the variable
 			newAction := createActionNodeToPrintVar(varname)
-			insertActionAfterRef(t.tree.Root, node, newAction)
+			if insertActionAfterRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.variablifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
 			return true
 		}
 	}
@@ -445,11 +514,16 @@ func (t *treeSimplifier) simplifyPipeNode(node *parse.PipeNode, ref parse.Node) 
 			varName := t.createVarName()
 			varNode := createAVariableNode(varName)
 			if replaceCmdWithVar(node, firstCmd, varNode) == false {
-				panic("cmd not found in pipe")
+				err := fmt.Errorf("treeSimplifier.simplifyPipeNode: failed to replace Pipe with Var in Cmd\n%v\n%#v", firstCmd, firstCmd)
+				panic(err)
 			}
 			newAction := createAVariablePipeActionFromCmd(varName, firstCmd)
 			if insertActionBeforeRef(t.tree.Root, ref, newAction) == false {
-				panic("reference node not found")
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyPipeNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
 			}
 			return true
 		}
@@ -486,7 +560,11 @@ func (t *treeSimplifier) simplifyPipeNode(node *parse.PipeNode, ref parse.Node) 
 					newCmd.Args = append(newCmd.Args, varNode)
 					node.Cmds = append(node.Cmds[:0], newCmd)
 					if insertActionBeforeRef(t.tree.Root, ref, newAction) == false {
-						panic("reference node not found")
+						err := fmt.Errorf(
+							"treeSimplifier.simplifyPipeNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+							newAction, newAction,
+							ref, ref)
+						panic(err)
 					}
 					return true
 				}
@@ -507,11 +585,16 @@ func (t *treeSimplifier) simplifyPipeNode(node *parse.PipeNode, ref parse.Node) 
 				varName := t.createVarName()
 				varNode := createAVariableNode(varName)
 				if replacePipeWithVar(cmd, pipeToMove, varNode) == false {
-					panic("pipe not found in cmd")
+					err := fmt.Errorf("treeSimplifier.simplifyPipeNode: failed to replace Pipe with Var in Cmd\n%v\n%#v", cmd, cmd)
+					panic(err)
 				}
 				newAction := createAVariablePipeAction(varName, pipeToMove)
 				if insertActionBeforeRef(t.tree.Root, ref, newAction) == false {
-					panic("reference node not found")
+					err := fmt.Errorf(
+						"treeSimplifier.simplifyPipeNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+						newAction, newAction,
+						ref, ref)
+					panic(err)
 				}
 				return true
 			}

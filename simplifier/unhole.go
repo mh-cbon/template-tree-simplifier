@@ -24,20 +24,15 @@ import (
 // Note2: this will work only after simplify occured
 func Unhole(tree *parse.Tree, state *State, funcs map[string]interface{}) {
 	unhole := &treeUnhole{tree: tree, funcs: funcs}
-	unhole.process(state)
+	state.Enter()
+	unhole.browseNodes(unhole.tree.Root, state)
+	state.Leave()
 }
 
 // treeTypecheck ...
 type treeUnhole struct {
 	tree  *parse.Tree
 	funcs map[string]interface{}
-}
-
-// process the tree until no more simplification can be done.
-func (t *treeUnhole) process(state *State) {
-	state.Enter()
-	t.browseNodes(t.tree.Root, state)
-	state.Leave()
 }
 
 // browseNodes recursively.
@@ -105,9 +100,8 @@ func (t *treeUnhole) browseNodes(l interface{}, state *State) {
 		//pass
 
 	default:
-		fmt.Printf("%#v\n", node)
-		fmt.Printf("!!! Unhandled %T\n", node)
-		panic("unhandled")
+		err := fmt.Errorf("treeUnhole.browseNodes: unhandled node type\n%v\n%#v", node, node)
+		panic(err)
 	}
 }
 
@@ -202,8 +196,8 @@ func (t *treeUnhole) unholeActionNode(node *parse.ActionNode, state *State) {
 			}
 		}
 	} else if len(node.Pipe.Decl) == 1 && len(node.Pipe.Cmds) > 1 {
-		fmt.Println(node)
-		panic("unhandled")
+		err := fmt.Errorf("treeUnhole.unholeActionNode: unhandled length of node.Pipe.Decl or node.Pipe.Cmds\n%v\n%#v", node, node)
+		panic(err)
 	}
 }
 
@@ -223,15 +217,18 @@ func splitTypedPath(path []string, val reflect.Type) ([]string, []string) {
 			meth, found := val.MethodByName(p)
 			if found {
 				if meth.Type.NumOut() == 0 {
-					panic("method is void..")
+					err := fmt.Errorf("splitTypedPath: Found void method, impossible processing of %v in %v", path, val)
+					panic(err)
 				}
 				if meth.Type.Out(0).Kind() == reflect.Struct {
 					val = field.Type
 				} else {
-					panic("unhandled method return value type")
+					err := fmt.Errorf("splitTypedPath: Found non struct method return parameter, impossible processing of %v in %v", path, val)
+					panic(err)
 				}
 			} else {
-				panic("field/method not found")
+				err := fmt.Errorf("splitTypedPath: Path not found %v in %v", path, val)
+				panic(err)
 			}
 		}
 	}

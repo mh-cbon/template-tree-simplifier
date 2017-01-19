@@ -9,11 +9,12 @@ import (
 
 // Unshadow process the tree until no more variable is shadowed.
 func Unshadow(tree *parse.Tree) {
-	s := &treeUnshadower{
+	t := &treeUnshadower{
 		vars:           []string{},
 		currentRenames: map[string]string{},
 	}
-	s.process(tree)
+	t.tree = tree
+	t.browseToUnshadow(tree.Root)
 }
 
 // treeUnshadower holds
@@ -70,12 +71,7 @@ func (t *treeUnshadower) getName(n string) string {
 	return n
 }
 
-// process the tree until no more unshadowing can be done.
-func (t *treeUnshadower) process(tree *parse.Tree) {
-	t.tree = tree
-	t.browseToUnshadow(tree.Root)
-}
-
+// browseToUnshadow browses all nodes and unshadow variable
 func (t *treeUnshadower) browseToUnshadow(l interface{}) {
 	switch node := l.(type) {
 
@@ -137,20 +133,27 @@ func (t *treeUnshadower) browseToUnshadow(l interface{}) {
 		node.Ident[0] = t.getName(node.Ident[0])
 
 	default:
-		fmt.Printf("%#v\n", node)
-		fmt.Printf("!!! Unhandled %T\n", node)
-		panic("nop")
+		err := fmt.Errorf("treeUnshadower.browseToUnshadow: unhandled node type\n%v\n%#v", node, node)
+		panic(err)
 	}
 }
 
+// handleDecl should receive a variable node of a Pipe.Decl,
+// it renames the variable declaration to unshadow it from previous declartions.
+// if the variable does not need unshadowing, it is left intact.
 func (t *treeUnshadower) handleDecl(node *parse.VariableNode) {
+	// is it {{$v := ""}} or {{$v.field = "rr"}} ?
 	if len(node.Ident) == 1 {
+		// Is this var $v already defined ?
 		if t.hasVar(node.Ident[0]) == false {
+			// nop, then register it only.
 			t.registerVar(node.Ident[0])
 		} else {
+			// yup, then rename it.
 			node.Ident[0] = t.rename(node.Ident[0])
 		}
 	} else {
+		// keep browsing.
 		t.browseToUnshadow(node)
 	}
 }

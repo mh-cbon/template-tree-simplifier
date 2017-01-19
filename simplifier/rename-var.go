@@ -70,8 +70,7 @@ func renameVariables(l interface{}) {
 		// pass
 
 	default:
-		fmt.Printf("%#v\n", node)
-		fmt.Printf("!!! Unhandled %T\n", node)
-		panic("unhandled")
+		err := fmt.Errorf("renameVariables: unhandled node type\n%v\n%#v", node, node)
+		panic(err)
 	}
 }

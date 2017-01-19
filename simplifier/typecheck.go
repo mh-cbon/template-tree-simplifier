@@ -124,7 +124,8 @@ func (s *State) BrowsePathType(path []string, val reflect.Type) reflect.Type {
 		if !found {
 			meth, found := val.MethodByName(p)
 			if !found {
-				panic("field/method not found")
+				err := fmt.Errorf("State.BrowsePathType: path %v not found in type %v", path, val)
+				panic(err)
 			}
 			val = meth.Type.Out(0)
 		} else {
@@ -223,9 +224,8 @@ func (t *treeTypecheck) browseNodes(l interface{}, state *State) {
 		//pass
 
 	default:
-		fmt.Printf("%#v\n", node)
-		fmt.Printf("!!! Unhandled %T\n", node)
-		panic("unhandled")
+		err := fmt.Errorf("treeTypecheck.browseNodes: unhandled node type\n%v\n%#v", node, node)
+		panic(err)
 	}
 }
 
@@ -277,7 +277,8 @@ func (t *treeTypecheck) typeCheckActionNode(node *parse.ActionNode, state *State
 
 			}
 		} else {
-			panic("unhandled")
+			err := fmt.Errorf("treeTypecheck.typeCheckActionNode: unhandled length of node.Pipe.Decl or node.Pipe.Cmds\n%v\n%#v", node, node)
+			panic(err)
 		}
 	}
 	return false
@@ -298,13 +299,16 @@ func (t *treeTypecheck) enterRangeNode(node *parse.RangeNode, state *State) bool
 			newDotType = state.Dot()
 
 		} else {
-			panic("unhandled")
+			err := fmt.Errorf("treeTypecheck.enterRangeNode: unhandled type of Arg[0]\n%v\n%#v", node, node)
+			panic(err)
 		}
 	} else {
-		panic("unhandled")
+		err := fmt.Errorf("treeTypecheck.enterRangeNode: unhandled length of node.Pipe.Cmds\n%v\n%#v", node, node)
+		panic(err)
 	}
 	if newDotType == nil {
-		panic("new dot type not found")
+		err := fmt.Errorf("treeTypecheck.enterRangeNode: new dot type not found\n%v\n%#v", node, node)
+		panic(err)
 	}
 	state.Add()
 	state.Enter()
@@ -337,13 +341,16 @@ func (t *treeTypecheck) enterWithNode(node *parse.WithNode, state *State) bool {
 			newDotType = state.Dot()
 
 		} else {
-			panic("unhandled")
+			err := fmt.Errorf("treeTypecheck.enterWithNode: unhandled type of Arg[0]\n%v\n%#v", node, node)
+			panic(err)
 		}
 	} else {
-		panic("unhandled")
+		err := fmt.Errorf("treeTypecheck.enterWithNode: unhandled length of node.Pipe.Cmds\n%v\n%#v", node, node)
+		panic(err)
 	}
 	if newDotType == nil {
-		panic("new dot type not found")
+		err := fmt.Errorf("treeTypecheck.enterWithNode: new dot type not found\n%v\n%#v", node, node)
+		panic(err)
 	}
 	state.Add()
 	state.Enter()
@@ -353,7 +360,8 @@ func (t *treeTypecheck) enterWithNode(node *parse.WithNode, state *State) bool {
 		if len(node.Pipe.Decl) == 1 {
 			state.AddVar(node.Pipe.Decl[0].Ident[0], state.Dot())
 		} else {
-			panic("unhandled")
+			err := fmt.Errorf("treeTypecheck.enterWithNode: unhandled length of node.Pipe.Decl\n%v\n%#v", node, node)
+			panic(err)
 		}
 	}
 	return false
