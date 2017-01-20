@@ -12,17 +12,19 @@ import (
 )
 
 type TestData struct {
-	tplstr       string
-	data         interface{}
-	expectTplStr string
-	funcs        template.FuncMap
-	simplify     bool
-	unshadow     bool
-	typecheck    bool
-	unhole       bool
-	usedot       bool
-	expectDotUse bool
-	checkedTypes []map[string]reflect.Type
+	tplstr         string
+	data           interface{}
+	expectTplStr   string
+	funcs          template.FuncMap
+	simplify       bool
+	unshadow       bool
+	typecheck      bool
+	unhole         bool
+	usedot         bool
+	expectDotUse   bool
+	printsanything bool
+	expectPrints   bool
+	checkedTypes   []map[string]reflect.Type
 }
 
 func TestAll(t *testing.T) {
@@ -534,6 +536,18 @@ func execTestData(testData TestData, t *testing.T) bool {
 				"UseDot expectation did not match expected=%v, got=%v\nORIGINAL\n%v\n",
 				testData.expectDotUse,
 				usingDot,
+				testData.tplstr)
+			return false
+		}
+		return true
+	} else if testData.printsanything {
+		// do the PrintsAnything test
+		isPrinting := printsanythingtemplate(tpl)
+		if isPrinting != testData.expectPrints {
+			t.Errorf(
+				"PrintsAnything expectation did not match, expected=%v, got=%v\nORIGINAL\n%v\n",
+				testData.expectPrints,
+				isPrinting,
 				testData.tplstr)
 			return false
 		}
