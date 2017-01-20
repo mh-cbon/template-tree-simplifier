@@ -20,6 +20,8 @@ type TestData struct {
 	unshadow     bool
 	typecheck    bool
 	unhole       bool
+	usedot       bool
+	expectDotUse bool
 	checkedTypes []map[string]reflect.Type
 }
 
@@ -524,6 +526,18 @@ func execTestData(testData TestData, t *testing.T) bool {
 		// do the unholing
 		modifiedTemplate, typeCheck = unholetemplate(tpl, testData)
 		// fmt.Printf("%#v\n", modifiedTemplate.Tree.Root.String())
+	} else if testData.usedot {
+		// do the usedot test
+		usingDot := usedottemplate(tpl)
+		if usingDot != testData.expectDotUse {
+			t.Errorf(
+				"UseDot expectation did not match expected=%v, got=%v\nORIGINAL\n%v\n",
+				testData.expectDotUse,
+				usingDot,
+				testData.tplstr)
+			return false
+		}
+		return true
 	}
 	// execute simplified template, check everything is still fine
 	simplifiedOut, err := exectemplate(modifiedTemplate, testData.data)
