@@ -3,6 +3,8 @@ package simplifier
 import (
 	"fmt"
 	"text/template/parse"
+
+	"github.com/serenize/snaker"
 )
 
 // renameVariables browses all tree nodes,
@@ -20,7 +22,7 @@ func renameVariables(l interface{}) {
 
 	case *parse.VariableNode:
 		if node.Ident[0] != "$" {
-			node.Ident[0] = "$tpl_" + node.Ident[0][1:] // get ride of $ sign
+			node.Ident[0] = "$tpl" + snaker.SnakeToCamel(node.Ident[0][1:]) // get ride of $ sign
 		}
 
 	case *parse.ActionNode:
