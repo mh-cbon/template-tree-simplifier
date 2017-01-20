@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+var tplFunc = map[string]interface{}{
+	"browsePropertyPath": BrowsePropertyPath,
+}
+
 //BrowsePropertyPath browse a property path ("b.c.d") on some value
 func BrowsePropertyPath(some interface{}, propertypath string, args ...interface{}) interface{} {
 	to := strings.Split(propertypath, ".")
