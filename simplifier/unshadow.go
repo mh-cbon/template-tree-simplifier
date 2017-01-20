@@ -46,7 +46,7 @@ func (t *treeUnshadower) registerVar(n string) {
 // if the variable is already unique, it is returned as is.
 func (t *treeUnshadower) rename(varname string) string {
 	if t.hasVar(varname) {
-		n := varname + "_shadow"
+		n := varname + "Shadow"
 		z := n
 		i := -1
 		for t.hasVar(z) {

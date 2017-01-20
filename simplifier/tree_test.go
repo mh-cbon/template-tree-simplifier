@@ -122,19 +122,19 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$t := "what" | up}}`,
-			expectTplStr: `{{$tpl_t := up "what"}}`,
+			expectTplStr: `{{$tplT := up "what"}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{$t := ("what" | up)}}`,
-			expectTplStr: `{{$tpl_t := up "what"}}`,
+			expectTplStr: `{{$tplT := up "what"}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{$t := (.S | up)}}`,
-			expectTplStr: `{{$tpl_t := up .S}}`,
+			expectTplStr: `{{$tplT := up .S}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -142,16 +142,16 @@ func TestAll(t *testing.T) {
 		TestData{
 			tplstr: `{{$t := ("what" | up)}}
 {{$k := up $t}}`,
-			expectTplStr: `{{$tpl_t := up "what"}}
-{{$tpl_k := up $tpl_t}}`,
+			expectTplStr: `{{$tplT := up "what"}}
+{{$tplK := up $tplT}}`,
 			funcs:    defFuncs,
 			simplify: true,
 		},
 		TestData{
 			tplstr: `{{$t := (.S | up)}}
 {{$k := up $t}}`,
-			expectTplStr: `{{$tpl_t := up .S}}
-{{$tpl_k := up $tpl_t}}`,
+			expectTplStr: `{{$tplT := up .S}}
+{{$tplK := up $tplT}}`,
 			funcs:    defFuncs,
 			data:     struct{ S string }{S: "hello"},
 			simplify: true,
@@ -246,13 +246,13 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$var0 := up "what" | lower}}{{$var0}}`,
-			expectTplStr: `{{$var0 := up "what"}}{{$tpl_var0 := lower $var0}}{{$tpl_var0}}`,
+			expectTplStr: `{{$var0 := up "what"}}{{$tplVar0 := lower $var0}}{{$tplVar0}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{$var0 := up .S | lower}}{{$var0}}`,
-			expectTplStr: `{{$var0 := up .S}}{{$tpl_var0 := lower $var0}}{{$tpl_var0}}`,
+			expectTplStr: `{{$var0 := up .S}}{{$tplVar0 := lower $var0}}{{$tplVar0}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -271,7 +271,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$var0 := eq (lower "up") "what"}}`,
-			expectTplStr: `{{$var0 := lower "up"}}{{$tpl_var0 := eq $var0 "what"}}`,
+			expectTplStr: `{{$var0 := lower "up"}}{{$tplVar0 := eq $var0 "what"}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
@@ -301,8 +301,8 @@ func TestAll(t *testing.T) {
 			tplstr: `{{range $i,$v := split "what" ""}}
 {{$i}} -> {{$v}}
 {{end}}`,
-			expectTplStr: `{{$var0 := split "what" ""}}{{range $tpl_i, $tpl_v := $var0}}
-{{$tpl_i}} -> {{$tpl_v}}
+			expectTplStr: `{{$var0 := split "what" ""}}{{range $tplI, $tplV := $var0}}
+{{$tplI}} -> {{$tplV}}
 {{end}}`,
 			funcs:    defFuncs,
 			data:     struct{ List []string }{List: []string{"what"}},
@@ -312,8 +312,8 @@ func TestAll(t *testing.T) {
 			tplstr: `{{range $i,$v := "some" | split (("what" | lower) | up)}}
 {{$i}} -> {{$v}}
 {{end}}`,
-			expectTplStr: `{{$var2 := lower "what"}}{{$var1 := up $var2}}{{$var0 := split $var1 "some"}}{{range $tpl_i, $tpl_v := $var0}}
-{{$tpl_i}} -> {{$tpl_v}}
+			expectTplStr: `{{$var2 := lower "what"}}{{$var1 := up $var2}}{{$var0 := split $var1 "some"}}{{range $tplI, $tplV := $var0}}
+{{$tplI}} -> {{$tplV}}
 {{end}}`,
 			funcs:    defFuncs,
 			data:     struct{ List []string }{List: []string{"what"}},
@@ -380,34 +380,34 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{with $x := "output"}}{{. | up}}{{end}}`,
-			expectTplStr: `{{with $tpl_x := "output"}}{{$var0 := up .}}{{$var0}}{{end}}`,
+			expectTplStr: `{{with $tplX := "output"}}{{$var0 := up .}}{{$var0}}{{end}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{with $x := "output"}}{{$ | up}}{{end}}`,
-			expectTplStr: `{{with $tpl_x := "output"}}{{$var0 := up $}}{{$var0}}{{end}}`,
+			expectTplStr: `{{with $tplX := "output"}}{{$var0 := up $}}{{$var0}}{{end}}`,
 			funcs:        defFuncs,
 			data:         "hello",
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{with $x := "output" | lower}}{{$ | up}}{{. | up}}{{end}}`,
-			expectTplStr: `{{$var0 := lower "output"}}{{with $tpl_x := $var0}}{{$var1 := up $}}{{$var1}}{{$var2 := up .}}{{$var2}}{{end}}`,
+			expectTplStr: `{{$var0 := lower "output"}}{{with $tplX := $var0}}{{$var1 := up $}}{{$var1}}{{$var2 := up .}}{{$var2}}{{end}}`,
 			funcs:        defFuncs,
 			data:         "hello",
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{with $x := "output" | lower}}{{$ | up}}{{. | up | lower}}{{end}}`,
-			expectTplStr: `{{$var0 := lower "output"}}{{with $tpl_x := $var0}}{{$var1 := up $}}{{$var1}}{{$var3 := up .}}{{$var2 := lower $var3}}{{$var2}}{{end}}`,
+			expectTplStr: `{{$var0 := lower "output"}}{{with $tplX := $var0}}{{$var1 := up $}}{{$var1}}{{$var3 := up .}}{{$var2 := lower $var3}}{{$var2}}{{end}}`,
 			funcs:        defFuncs,
 			data:         "hello",
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{with $x := "" | lower}}{{else}}{{$ | up}}{{. | up | lower}}{{end}}`,
-			expectTplStr: `{{$var0 := lower ""}}{{with $tpl_x := $var0}}{{else}}{{$var1 := up $}}{{$var1}}{{$var3 := up .}}{{$var2 := lower $var3}}{{$var2}}{{end}}`,
+			expectTplStr: `{{$var0 := lower ""}}{{with $tplX := $var0}}{{else}}{{$var1 := up $}}{{$var1}}{{$var3 := up .}}{{$var2 := lower $var3}}{{$var2}}{{end}}`,
 			funcs:        defFuncs,
 			data:         "hello",
 			simplify:     true,
@@ -442,7 +442,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{with $y := .S.S}}plop{{end}}`,
-			expectTplStr: `{{$var0 := .S.S}}{{with $tpl_y := $var0}}plop{{end}}`,
+			expectTplStr: `{{$var0 := .S.S}}{{with $tplY := $var0}}plop{{end}}`,
 			funcs:        defFuncs,
 			data:         struct{ S struct{ S bool } }{S: struct{ S bool }{S: true}},
 			simplify:     true,
@@ -456,7 +456,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$x := .}}{{$x.S.S}}`,
-			expectTplStr: `{{$tpl_x := .}}{{$var0 := $tpl_x.S.S}}{{$var0}}`,
+			expectTplStr: `{{$tplX := .}}{{$var0 := $tplX.S.S}}{{$var0}}`,
 			funcs:        defFuncs,
 			data:         struct{ S struct{ S []string } }{S: struct{ S []string }{S: []string{"hello"}}},
 			simplify:     true,
@@ -483,7 +483,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$x := "r"}}{{(((($x))))}}`,
-			expectTplStr: `{{$tpl_x := "r"}}{{$tpl_x}}`,
+			expectTplStr: `{{$tplX := "r"}}{{$tplX}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
@@ -570,8 +570,8 @@ func execTestData(testData TestData, t *testing.T) bool {
 			typeCheck.Enter()
 			for vard, typed := range scope {
 				if typeCheck.HasVar(vard) == false {
-					t.Errorf("Expected scope(%v) to contain the variable=%v\nTEMPLATE:%v",
-						i, vard, testData.tplstr)
+					t.Errorf("Expected scope(%v) to contain the variable=%v\nTEMPLATE:%v\n%#v",
+						i, vard, testData.tplstr, typeCheck)
 					return false
 				} else {
 					if typed != typeCheck.GetVar(vard) {

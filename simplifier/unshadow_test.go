@@ -22,20 +22,20 @@ func TestUnshadow(t *testing.T) {
 	testTable := []TestData{
 		TestData{
 			tplstr:       `{{$y := "r"}}{{$y}}{{$y := "r"}}{{$y}}`,
-			expectTplStr: `{{$y := "r"}}{{$y}}{{$y_shadow := "r"}}{{$y_shadow}}`,
+			expectTplStr: `{{$y := "r"}}{{$y}}{{$yShadow := "r"}}{{$yShadow}}`,
 			funcs:        defFuncs,
 			unshadow:     true,
 		},
 		TestData{
 			tplstr:       `{{$y := "r"}}{{$y}}{{$y := .}}{{$y}}{{$y.X}}`,
-			expectTplStr: `{{$y := "r"}}{{$y}}{{$y_shadow := .}}{{$y_shadow}}{{$y_shadow.X}}`,
+			expectTplStr: `{{$y := "r"}}{{$y}}{{$yShadow := .}}{{$yShadow}}{{$yShadow.X}}`,
 			funcs:        defFuncs,
 			data:         struct{ X string }{X: ""},
 			unshadow:     true,
 		},
 		TestData{
 			tplstr:       `{{$y := "r"}}{{$y := "r"}}{{up $y}}`,
-			expectTplStr: `{{$y := "r"}}{{$y_shadow := "r"}}{{up $y_shadow}}`,
+			expectTplStr: `{{$y := "r"}}{{$yShadow := "r"}}{{up $yShadow}}`,
 			funcs:        defFuncs,
 			unshadow:     true,
 		},
@@ -58,7 +58,7 @@ func TestUnshadow(t *testing.T) {
 {{end}}
 {{end}}`,
 			expectTplStr: `{{range $i, $v := .SomeTemplateDataSlice}}
-{{range $i_shadow, $v_shadow := $v.SomeTemplateDataSlice}}
+{{range $iShadow, $vShadow := $v.SomeTemplateDataSlice}}
 {{end}}
 {{end}}`,
 			funcs:    defFuncs,
