@@ -67,13 +67,11 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 
 	case *parse.ListNode:
 		if node != nil {
-			// t.enter(node)
 			for _, child := range node.Nodes {
 				if t.browseNodes(child) {
 					return true
 				}
 			}
-			// t.leave()
 		}
 
 	case *parse.ActionNode:
@@ -106,13 +104,11 @@ func (t *treeSimplifier) browseNodes(l interface{}) bool {
 		}
 
 	case *parse.CommandNode:
-		// t.enter(node)
 		for _, child := range node.Args {
 			if t.browseNodes(child) {
 				return true
 			}
 		}
-		// t.leave()
 
 	case *parse.RangeNode:
 		t.enter(node)
