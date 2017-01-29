@@ -37,7 +37,7 @@ func TestAll(t *testing.T) {
 		"incr":  func(s int) int { return s + 1 },
 		"mul":   func(s int, d int) int { return s * d },
 	}
-	// ad more test with $ and numbers and bool
+
 	testTable := []TestData{
 		TestData{
 			tplstr:       `{{"son" | split "wat"}}`,
