@@ -20,6 +20,7 @@ func TestUnhole(t *testing.T) {
 		"incr":               func(s int) int { return s + 1 },
 		"mul":                func(s int, d int) int { return s * d },
 		"intf":               func() interface{} { return nil },
+		"html":               func(a ...interface{}) interface{} { return nil },
 		"browsePropertyPath": funcmap.BrowsePropertyPath,
 	}
 	// create a reflect of interface{}
@@ -195,10 +196,53 @@ func TestUnhole(t *testing.T) {
 				},
 			},
 		},
+		TestData{
+			tplstr:       `{{html .Some.Some}}`,
+			expectTplStr: `{{$var0 := browsePropertyPath . "Some.Some"}}{{$var1 := html $var0}}{{$var1}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			data:         type4{Some: type4{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":     reflect.TypeOf(type4{}),
+					"$var0": reflectInterface,
+					"$var1": reflectInterface,
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{$vv := html .Some.Some}}`,
+			expectTplStr: `{{$var0 := browsePropertyPath . "Some.Some"}}{{$tplVv := html $var0}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			data:         type4{Some: type4{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(type4{}),
+					"$var0":  reflectInterface,
+					"$tplVv": reflectInterface,
+				},
+			},
+		},
+		TestData{
+			tplstr:       `{{$vv := .Some}}{{html $vv.Some}}`,
+			expectTplStr: `{{$tplVv := .Some}}{{$var0 := browsePropertyPath $tplVv "Some"}}{{$var1 := html $var0}}{{$var1}}`,
+			funcs:        defFuncs,
+			unhole:       true,
+			data:         type4{Some: type4{}},
+			checkedTypes: []map[string]reflect.Type{
+				map[string]reflect.Type{
+					".":      reflect.TypeOf(type4{}),
+					"$var0":  reflectInterface,
+					"$var1":  reflectInterface,
+					"$tplVv": reflectInterface,
+				},
+			},
+		},
 	}
 
-	for _, testData := range testTable {
-		if execTestData(testData, t) == false {
+	for i, testData := range testTable {
+		if execTestData(testData, t, i) == false {
 			break
 		}
 	}

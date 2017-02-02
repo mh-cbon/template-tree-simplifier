@@ -10,6 +10,14 @@ import (
 	"github.com/mh-cbon/template-tree-simplifier/simplifier"
 )
 
+type tplData struct {
+	Some string
+}
+
+func (t tplData) Method(s string) string {
+	return s
+}
+
 func main() {
 	file := "cli/tpl/test.tpl"
 	fmt.Println(file)
@@ -24,7 +32,8 @@ func main() {
 		"mul":       func(s int, d int) int { return s * d },
 	}
 
-	data := "what"
+	// data := "what"
+	data := tplData{}
 
 	tpl, err := template.New("").Funcs(funcs).ParseFiles(file)
 	if err != nil {

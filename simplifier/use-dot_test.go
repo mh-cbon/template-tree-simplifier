@@ -74,8 +74,8 @@ func TestUseDot(t *testing.T) {
 		},
 	}
 
-	for _, testData := range testTable {
-		if execTestData(testData, t) == false {
+	for i, testData := range testTable {
+		if execTestData(testData, t, i) == false {
 			break
 		}
 	}

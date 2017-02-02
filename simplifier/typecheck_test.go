@@ -211,26 +211,28 @@ func TestTypeCheck(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$x := up .Some}}`,
-			expectTplStr: `{{$tplX := up .Some}}`,
+			expectTplStr: `{{$var0 := .Some}}{{$tplX := up $var0}}`,
 			funcs:        defFuncs,
 			typecheck:    true,
 			data:         type2{Some: ""},
 			checkedTypes: []map[string]reflect.Type{
 				map[string]reflect.Type{
 					".":     reflect.TypeOf(type2{}),
+					"$var0": reflect.TypeOf(""),
 					"$tplX": reflect.TypeOf(""),
 				},
 			},
 		},
 		TestData{
 			tplstr:       `{{$x := up .Some}}{{$y := $x}}`,
-			expectTplStr: `{{$tplX := up .Some}}{{$tplY := $tplX}}`,
+			expectTplStr: `{{$var0 := .Some}}{{$tplX := up $var0}}{{$tplY := $tplX}}`,
 			funcs:        defFuncs,
 			typecheck:    true,
 			data:         type2{Some: ""},
 			checkedTypes: []map[string]reflect.Type{
 				map[string]reflect.Type{
 					".":     reflect.TypeOf(type2{}),
+					"$var0": reflect.TypeOf(""),
 					"$tplX": reflect.TypeOf(""),
 					"$tplY": reflect.TypeOf(""),
 				},
@@ -483,8 +485,8 @@ func TestTypeCheck(t *testing.T) {
 		},
 	}
 
-	for _, testData := range testTable {
-		if execTestData(testData, t) == false {
+	for i, testData := range testTable {
+		if execTestData(testData, t, i) == false {
 			break
 		}
 	}

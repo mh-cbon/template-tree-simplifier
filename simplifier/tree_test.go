@@ -27,6 +27,14 @@ type TestData struct {
 	checkedTypes   []map[string]reflect.Type
 }
 
+type tplData struct {
+	Some string
+}
+
+func (t tplData) Method(s string) string {
+	return s
+}
+
 func TestAll(t *testing.T) {
 	//-
 	defFuncs := template.FuncMap{
@@ -54,7 +62,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{.S | up}}`,
-			expectTplStr: `{{$var0 := up .S}}{{$var0}}`,
+			expectTplStr: `{{$var1 := .S}}{{$var0 := up $var1}}{{$var0}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -85,7 +93,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{"some" | split (.S | up)}}`,
-			expectTplStr: `{{$var0 := up .S}}{{$var1 := split $var0 "some"}}{{$var1}}`,
+			expectTplStr: `{{$var1 := .S}}{{$var0 := up $var1}}{{$var2 := split $var0 "some"}}{{$var2}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -98,14 +106,14 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{"some" | split ((.S | lower) | up)}}`,
-			expectTplStr: `{{$var1 := lower .S}}{{$var0 := up $var1}}{{$var2 := split $var0 "some"}}{{$var2}}`,
+			expectTplStr: `{{$var2 := .S}}{{$var1 := lower $var2}}{{$var0 := up $var1}}{{$var3 := split $var0 "some"}}{{$var3}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
 		},
 		TestData{
 			tplstr:       `{{("what" | lower) | split "" | join "" | up}}`,
-			expectTplStr: `{{$var0 := lower "what"}}{{$var2 := split "" $var0}}{{$var3 := join "" $var2}}{{$var1 := up $var3}}{{$var1}}`,
+			expectTplStr: `{{$var2 := lower "what"}}{{$var1 := split "" $var2}}{{$var0 := join "" $var1}}{{$var3 := up $var0}}{{$var3}}`,
 			funcs:        defFuncs,
 			simplify:     true,
 		},
@@ -136,7 +144,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$t := (.S | up)}}`,
-			expectTplStr: `{{$tplT := up .S}}`,
+			expectTplStr: `{{$var0 := .S}}{{$tplT := up $var0}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -152,7 +160,7 @@ func TestAll(t *testing.T) {
 		TestData{
 			tplstr: `{{$t := (.S | up)}}
 {{$k := up $t}}`,
-			expectTplStr: `{{$tplT := up .S}}
+			expectTplStr: `{{$var0 := .S}}{{$tplT := up $var0}}
 {{$tplK := up $tplT}}`,
 			funcs:    defFuncs,
 			data:     struct{ S string }{S: "hello"},
@@ -185,7 +193,7 @@ func TestAll(t *testing.T) {
   {{"some" | split (.S | up)}}
 {{end}}`,
 			expectTplStr: `{{if true}}
-  {{$var0 := up .S}}{{$var1 := split $var0 "some"}}{{$var1}}
+  {{$var1 := .S}}{{$var0 := up $var1}}{{$var2 := split $var0 "some"}}{{$var2}}
 {{end}}`,
 			funcs:    defFuncs,
 			data:     struct{ S string }{S: "hello"},
@@ -199,7 +207,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{if eq (.S | up | lower) .S}}{{end}}`,
-			expectTplStr: `{{$var2 := up .S}}{{$var1 := lower $var2}}{{$var0 := eq $var1 .S}}{{if $var0}}{{end}}`,
+			expectTplStr: `{{$var2 := .S}}{{$var3 := up $var2}}{{$var1 := lower $var3}}{{$var4 := .S}}{{$var0 := eq $var1 $var4}}{{if $var0}}{{end}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -218,8 +226,8 @@ func TestAll(t *testing.T) {
 			tplstr: `{{if eq (.S | up | lower) "what"}}
   {{.S | split ("what" | up)}}
 {{end}}`,
-			expectTplStr: `{{$var2 := up .S}}{{$var1 := lower $var2}}{{$var0 := eq $var1 "what"}}{{if $var0}}
-  {{$var3 := up "what"}}{{$var4 := split $var3 .S}}{{$var4}}
+			expectTplStr: `{{$var2 := .S}}{{$var3 := up $var2}}{{$var1 := lower $var3}}{{$var0 := eq $var1 "what"}}{{if $var0}}
+  {{$var4 := up "what"}}{{$var6 := .S}}{{$var5 := split $var4 $var6}}{{$var5}}
 {{end}}`,
 			funcs:    defFuncs,
 			data:     struct{ S string }{S: "hello"},
@@ -239,8 +247,8 @@ func TestAll(t *testing.T) {
 			tplstr: `{{if not (eq (.S | up | lower) "what")}}
   {{"some" | split (.S | up)}}
 {{end}}`,
-			expectTplStr: `{{$var3 := up .S}}{{$var2 := lower $var3}}{{$var1 := eq $var2 "what"}}{{$var0 := not $var1}}{{if $var0}}
-  {{$var4 := up .S}}{{$var5 := split $var4 "some"}}{{$var5}}
+			expectTplStr: `{{$var3 := .S}}{{$var4 := up $var3}}{{$var2 := lower $var4}}{{$var1 := eq $var2 "what"}}{{$var0 := not $var1}}{{if $var0}}
+  {{$var6 := .S}}{{$var5 := up $var6}}{{$var7 := split $var5 "some"}}{{$var7}}
 {{end}}`,
 			funcs:    defFuncs,
 			data:     struct{ S string }{S: "hello"},
@@ -254,7 +262,7 @@ func TestAll(t *testing.T) {
 		},
 		TestData{
 			tplstr:       `{{$var0 := up .S | lower}}{{$var0}}`,
-			expectTplStr: `{{$var0 := up .S}}{{$tplVar0 := lower $var0}}{{$tplVar0}}`,
+			expectTplStr: `{{$var0 := .S}}{{$var1 := up $var0}}{{$tplVar0 := lower $var1}}{{$tplVar0}}`,
 			funcs:        defFuncs,
 			data:         struct{ S string }{S: "hello"},
 			simplify:     true,
@@ -489,28 +497,56 @@ func TestAll(t *testing.T) {
 			funcs:        defFuncs,
 			simplify:     true,
 		},
+		TestData{
+			tplstr:       `{{.Method "ff"}}`,
+			expectTplStr: `{{$var0 := .Method "ff"}}{{$var0}}`,
+			funcs:        defFuncs,
+			data:         tplData{},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{.Method "ff" | up}}`,
+			expectTplStr: `{{$var0 := .Method "ff"}}{{$var1 := up $var0}}{{$var1}}`,
+			funcs:        defFuncs,
+			data:         tplData{},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{$x := .}}{{$x.Method "ff"}}`,
+			expectTplStr: `{{$tplX := .}}{{$var0 := $tplX.Method "ff"}}{{$var0}}`,
+			funcs:        defFuncs,
+			data:         tplData{},
+			simplify:     true,
+		},
+		TestData{
+			tplstr:       `{{$x := .}}{{$x.Method "ff" | up}}`,
+			expectTplStr: `{{$tplX := .}}{{$var0 := $tplX.Method "ff"}}{{$var1 := up $var0}}{{$var1}}`,
+			funcs:        defFuncs,
+			data:         tplData{},
+			simplify:     true,
+		},
 	}
 
-	for _, testData := range testTable {
-		if execTestData(testData, t) == false {
+	for i, testData := range testTable {
+		if execTestData(testData, t, i) == false {
 			break
 		}
 	}
 }
 
-func execTestData(testData TestData, t *testing.T) bool {
+func execTestData(testData TestData, t *testing.T, index int) bool {
 	// ensure the template is valid and working
 	tpl, err := template.New("").Funcs(testData.funcs).Parse(testData.tplstr)
 	if err != nil {
 		t.Logf("ORIGINAL TEMPLATE:\n%v\n", testData.tplstr)
-		t.Errorf("error while compiling original template: %v", err)
+		t.Errorf("Test(%v): Failed to compiling original template: %v", index, err)
 		return false
 	}
 	// execute template, check everything is still fine
 	originalOut, err := exectemplate(tpl, testData.data)
 	if err != nil {
 		t.Logf("ORIGINAL TEMPLATE:\n%v\n", testData.tplstr)
-		t.Errorf("error while executing original template: %v", err)
+		t.Errorf("Test(%v): Failed to execute original template: %v", index, err)
 		return false
 	}
 	var modifiedTemplate *template.Template
@@ -533,7 +569,8 @@ func execTestData(testData TestData, t *testing.T) bool {
 		usingDot := usedottemplate(tpl)
 		if usingDot != testData.expectDotUse {
 			t.Errorf(
-				"UseDot expectation did not match expected=%v, got=%v\nORIGINAL\n%v\n",
+				"Test(%v): UseDot did not match expected=%v, got=%v\nORIGINAL\n%v\n",
+				index,
 				testData.expectDotUse,
 				usingDot,
 				testData.tplstr)
@@ -545,7 +582,8 @@ func execTestData(testData TestData, t *testing.T) bool {
 		isPrinting := printsanythingtemplate(tpl)
 		if isPrinting != testData.expectPrints {
 			t.Errorf(
-				"PrintsAnything expectation did not match, expected=%v, got=%v\nORIGINAL\n%v\n",
+				"Test(%v): PrintsAnything expectation did not match, expected=%v, got=%v\nORIGINAL\n%v\n",
+				index,
 				testData.expectPrints,
 				isPrinting,
 				testData.tplstr)
@@ -558,47 +596,47 @@ func execTestData(testData TestData, t *testing.T) bool {
 	if err != nil {
 		t.Logf("ORIGINAL TEMPLATE:\n%v\n", testData.tplstr)
 		t.Logf("SIMPLIFIED TEMPLATE\n%v\n", modifiedTemplate.Tree.Root.String())
-		t.Errorf("error while executing simplified template: %v", err)
+		t.Errorf("Test(%v): Failed to execute the simplified template: %v", index, err)
 		return false
 	}
 	// ensure both output are eq
 	if originalOut != simplifiedOut {
-		t.Errorf("Output are different\nORIGINAL\n%v\nSIMPLIFIED\n%v\n",
-			originalOut, simplifiedOut)
+		t.Errorf("Test(%v): Unexpected template outputs\nORIGINAL\n%v\nSIMPLIFIED\n%v\n",
+			index, originalOut, simplifiedOut)
 		return false
 	}
 	// ensure the new template matches expected simplified template
-	s := fmt.Sprintf("%v", modifiedTemplate.Tree.Root.String())
-	if s != testData.expectTplStr {
-		t.Errorf("Simplified template is not as expected\nEXPECTED\n%v\nSIMPLIFIED\n%v\n",
-			testData.expectTplStr, s)
+	simplified := fmt.Sprintf("%v", modifiedTemplate.Tree.Root.String())
+	if simplified != testData.expectTplStr {
+		t.Errorf("Test(%v): Unexpected simplified template content\nEXPECTED\n%v\nSIMPLIFIED\n%v\n",
+			index, testData.expectTplStr, simplified)
 		return false
 	}
 	if typeCheck != nil {
 		if len(testData.checkedTypes) != typeCheck.Len() {
-			t.Errorf("Expected scope length is incorrect, expected=%v, got=%v\nTEMPLATE: %v",
-				len(testData.checkedTypes), typeCheck.Len(), testData.tplstr)
+			t.Errorf("Test(%v): Unexpected typechecker number of scopes, expected=%v, got=%v\nTEMPLATE: %v",
+				index, len(testData.checkedTypes), typeCheck.Len(), testData.tplstr)
 			return false
 		}
 		for i, scope := range testData.checkedTypes {
 			typeCheck.Enter()
 			for vard, typed := range scope {
 				if typeCheck.HasVar(vard) == false {
-					t.Errorf("Expected scope(%v) to contain the variable=%v\nTEMPLATE:%v\n%#v",
-						i, vard, testData.tplstr, typeCheck)
+					t.Errorf("Test(%v): Expected type checker scope(%v) to contain the variable=%v\nTEMPLATE:%v\nSIMPLIFIED:\n%v\n%#v",
+						index, i, vard, testData.tplstr, simplified, typeCheck)
 					return false
 				} else {
 					if typed != typeCheck.GetVar(vard) {
-						t.Errorf("Expected scope(%v) to contain the variable=%v with the same reflect.Type, expected=%v, got=%v\nTEMPLATE:%v",
-							i, vard, typed, typeCheck.GetVar(vard), testData.tplstr)
+						t.Errorf("Test(%v): Expected scope(%v) to contain the variable=%v with the same reflect.Type, expected=%v, got=%v\nTEMPLATE:%v",
+							index, i, vard, typed, typeCheck.GetVar(vard), testData.tplstr)
 						return false
 					}
 				}
 			}
 			for vard, _ := range typeCheck.Current() {
 				if _, ok := scope[vard]; ok == false {
-					t.Errorf("Uexpected variable=%v in scope(%v)\nTEMPLATE:%v",
-						vard, i, testData.tplstr)
+					t.Errorf("Test(%v): Uexpected variable=%v in scope(%v)\nTEMPLATE:%v",
+						index, vard, i, testData.tplstr)
 					return false
 				}
 			}
