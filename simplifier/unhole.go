@@ -126,6 +126,7 @@ func (t *treeUnhole) unholeActionNode(node *parse.ActionNode, state *State) {
 	*/
 	if len(node.Pipe.Decl) == 1 && len(node.Pipe.Cmds) == 1 {
 		decl := node.Pipe.Decl[0]
+		// variable node
 		if variable, ok := node.Pipe.Cmds[0].Args[0].(*parse.VariableNode); ok && len(variable.Ident) > 1 {
 			if state.GetVar(decl.Ident[0]) == reflectInterface {
 				typedPath, unTypedPath := splitTypedPath(variable.Ident, state.GetVar(variable.Ident[0]))
@@ -166,6 +167,7 @@ func (t *treeUnhole) unholeActionNode(node *parse.ActionNode, state *State) {
 					node.Pipe.Cmds[0].Args = append(node.Pipe.Cmds[0].Args[:0], args...)
 				}
 			}
+			// field node
 		} else if field, ok := node.Pipe.Cmds[0].Args[0].(*parse.FieldNode); ok && len(field.Ident) > 1 {
 			if state.GetVar(decl.Ident[0]) == reflectInterface {
 				typedPath, unTypedPath := splitTypedPath(field.Ident, state.Dot())
