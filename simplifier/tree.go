@@ -203,24 +203,87 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 	   {{ $some := ("what" | up) }}
 	   {{ $some | lower }}
 	*/
-	cmd, pipeToMove := getPipePrecedingIdentifier(node.Pipe)
-	if pipeToMove != nil {
-		varName := t.createVarName()
-		varNode := createAVariableNode(varName)
-		if replacePipeWithVar(cmd, pipeToMove, varNode) == false {
-			err := fmt.Errorf("treeSimplifier.simplifyActionNode: failed to replace Pipe with Var in Cmd\n%v\n%#v", cmd, cmd)
-			panic(err)
+	j := len(node.Pipe.Cmds)
+	lastCmd := node.Pipe.Cmds[j-1:][0]
+	_, isIdent := lastCmd.Args[0].(*parse.IdentifierNode)
+	// index, _ := getIndexOfCmdWithIdentifier(node.Pipe)
+	// is it the last one ?
+	if j > 1 && isIdent {
+		// is the preceding(/first?) command a pipe/field/variable ?
+		// for text/number/bool/dot node, we don t care.
+		pcmd := node.Pipe.Cmds[0]
+		switch pcmd.Args[0].(type) {
+		case *parse.PipeNode:
+			varName := t.createVarName()
+			// create a new action node
+			newAction := createAVariablePipeActionFromCmd(varName, nil)
+			for _, c := range node.Pipe.Cmds[:j-1] {
+				newAction.Pipe.Cmds = append(newAction.Pipe.Cmds, c)
+			}
+			// replace the cmd with the new varnode
+			newCmd := createACmdNode()
+			newCmd.Args = append(newCmd.Args, createAVariableNode(varName))
+			node.Pipe.Cmds = []*parse.CommandNode{newCmd, lastCmd}
+			// insert the new action node
+			if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+				err := fmt.Errorf(
+					"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+					newAction, newAction,
+					node, node)
+				panic(err)
+			}
+			return true
+		case *parse.FieldNode:
+			// its a field node, care about it,
+			// only if it has arguments (a method call)
+			if len(pcmd.Args) > 1 {
+				varName := t.createVarName()
+				// create a new action node
+				newAction := createAVariablePipeActionFromCmd(varName, nil)
+				for _, c := range node.Pipe.Cmds[:j-1] {
+					newAction.Pipe.Cmds = append(newAction.Pipe.Cmds, c)
+				}
+				// replace the cmd with the new varnode
+				newCmd := createACmdNode()
+				newCmd.Args = append(newCmd.Args, createAVariableNode(varName))
+				node.Pipe.Cmds = []*parse.CommandNode{newCmd, lastCmd}
+				// insert the new action node
+				if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+					err := fmt.Errorf(
+						"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+						newAction, newAction,
+						node, node)
+					panic(err)
+				}
+				return true
+			}
+		case *parse.VariableNode:
+			// its a variable node, care about it,
+			// only if it has arguments (a method call)
+			if len(pcmd.Args) > 1 {
+				varName := t.createVarName()
+				// create a new action node
+				newAction := createAVariablePipeActionFromCmd(varName, nil)
+				for _, c := range node.Pipe.Cmds[:j-1] {
+					newAction.Pipe.Cmds = append(newAction.Pipe.Cmds, c)
+				}
+				// replace the cmd with the new varnode
+				newCmd := createACmdNode()
+				newCmd.Args = append(newCmd.Args, createAVariableNode(varName))
+				node.Pipe.Cmds = []*parse.CommandNode{newCmd, lastCmd}
+				// insert the new action node
+				if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+					err := fmt.Errorf(
+						"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+						newAction, newAction,
+						node, node)
+					panic(err)
+				}
+				return true
+			}
 		}
-		newAction := createAVariablePipeAction(varName, pipeToMove)
-		if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
-			err := fmt.Errorf(
-				"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
-				newAction, newAction,
-				node, node)
-			panic(err)
-		}
-		return true
 	}
+
 	/*
 	  look for
 	  {{ "some" | split ("what" | up) }}
@@ -229,7 +292,7 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 	  {{ "some" | split $some }}
 	*/
 	for _, cmd := range node.Pipe.Cmds {
-		_, pipeToMove = getPipeFollowingIdentifier(cmd)
+		_, pipeToMove := getPipeFollowingIdentifier(cmd)
 		if pipeToMove != nil {
 			varName := t.createVarName()
 			varNode := createAVariableNode(varName)
@@ -280,19 +343,37 @@ func (t *treeSimplifier) simplifyActionNode(node *parse.ActionNode) bool {
 		}
 	}
 	/*
-	  look for
-	  {{ split "r" .Field.Node }}
-	  transform into
-	  {{ $some := .Field.Node}}
-	  {{ split "r" $some }}
+			  look for
+			  {{ split "r" .Field.Node }}
+		    or
+			  {{ $x := split "r" .Field.Node }}
+			  transform into
+			  {{ $some := .Field.Node}}
+			  {{ split "r" $some }}
 	*/
-	if len(node.Pipe.Decl) == 0 && len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) > 1 {
+	if len(node.Pipe.Cmds) > 0 && len(node.Pipe.Cmds[0].Args) > 1 {
 		if _, ok := node.Pipe.Cmds[0].Args[0].(*parse.IdentifierNode); ok {
 			for i, arg := range node.Pipe.Cmds[0].Args {
 				if field, ok := arg.(*parse.FieldNode); ok {
 					// create a new assignment of the fieldNode
 					varName := t.createVarName()
 					newAction := createAVariableAssignmentOfFieldNode(varName, field)
+					// insert the new action before this node
+					if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
+						err := fmt.Errorf(
+							"treeSimplifier.simplifyActionNode: failed to insert the new Action node\n%v\n%#v\nreference node was\n%v\n%#v",
+							newAction, newAction,
+							node, node)
+						panic(err)
+					}
+					// replace the fieldNode arg with a variable node
+					varNode := createAVariableNode(varName)
+					node.Pipe.Cmds[0].Args[i] = varNode
+					return true
+				} else if varnode, ok := arg.(*parse.VariableNode); ok && len(varnode.Ident) > 1 {
+					// create a new assignment of the VariableNode
+					varName := t.createVarName()
+					newAction := createAVariableAssignmentOfVariableNode(varName, varnode)
 					// insert the new action before this node
 					if insertActionBeforeRef(t.tree.Root, node, newAction) == false {
 						err := fmt.Errorf(
@@ -769,7 +850,9 @@ func createAVariablePipeActionFromCmd(name string, cmd *parse.CommandNode) *pars
 	}
 	actionPipe := &parse.PipeNode{}
 	actionPipe.Decl = append(actionPipe.Decl, varNode)
-	actionPipe.Cmds = append(actionPipe.Cmds, cmd)
+	if cmd != nil {
+		actionPipe.Cmds = append(actionPipe.Cmds, cmd)
+	}
 	node := &parse.ActionNode{
 		NodeType: parse.NodeAction,
 		Pipe:     actionPipe,
@@ -789,8 +872,7 @@ func createAVariableAssignmentOfSomeNode(name string, node parse.Node) *parse.Ac
 	}
 	actionPipe := &parse.PipeNode{}
 	actionPipe.Decl = append(actionPipe.Decl, varNode)
-	cmdNode := &parse.CommandNode{}
-	cmdNode.NodeType = parse.NodeCommand
+	cmdNode := createACmdNode()
 	cmdNode.Args = []parse.Node{node}
 	actionPipe.Cmds = append(actionPipe.Cmds, cmdNode)
 	return &parse.ActionNode{
@@ -835,8 +917,7 @@ func createActionNodeToPrintVar(varname string) *parse.ActionNode {
 	newAction.Pipe.NodeType = parse.NodePipe
 	newAction.Pipe.Decl = make([]*parse.VariableNode, 0)
 	newAction.Pipe.Cmds = make([]*parse.CommandNode, 0)
-	cmd := &parse.CommandNode{}
-	cmd.NodeType = parse.NodeCommand
+	cmd := createACmdNode()
 	cmd.Args = append(cmd.Args, &parse.VariableNode{
 		NodeType: parse.NodeVariable,
 		Ident:    []string{varname},
@@ -845,13 +926,20 @@ func createActionNodeToPrintVar(varname string) *parse.ActionNode {
 	return newAction
 }
 
-// createAVariableNode creates a VariableNode with givne name.
+// createAVariableNode creates a VariableNode with given name.
 func createAVariableNode(name string) *parse.VariableNode {
 	varNode := &parse.VariableNode{
 		NodeType: parse.NodeVariable,
 		Ident:    []string{name},
 	}
 	return varNode
+}
+
+// createACmdNode creates an empty CommandNode.
+func createACmdNode() *parse.CommandNode {
+	cmd := &parse.CommandNode{}
+	cmd.NodeType = parse.NodeCommand
+	return cmd
 }
 
 // replaceCmdWithVar replaces given searched command,
@@ -883,26 +971,6 @@ func replacePipeWithVar(cmd *parse.CommandNode, old *parse.PipeNode, newnode *pa
 		}
 	}
 	return false
-}
-
-// getPipePrecedingIdentifier identifies a PipeNode preceding an IdentifierNode within given pipe.Cmds.
-// example:
-// {{("some" |lower) | up}}
-// pipe is: ("some" |lower)
-// identifier is: up
-func getPipePrecedingIdentifier(node *parse.PipeNode) (*parse.CommandNode, *parse.PipeNode) {
-	if len(node.Cmds) > 1 {
-		for i, cmd := range node.Cmds {
-			if pipe, ok := cmd.Args[0].(*parse.PipeNode); ok {
-				if len(node.Cmds) > i+1 {
-					if _, okk := node.Cmds[i+1].Args[0].(*parse.IdentifierNode); okk {
-						return cmd, pipe
-					}
-				}
-			}
-		}
-	}
-	return nil, nil
 }
 
 // getPipeFollowingIdentifier identifies a PipeNode following an IdentifierNode into given CommandNode.
